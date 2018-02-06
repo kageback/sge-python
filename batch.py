@@ -1,6 +1,8 @@
 import subprocess
 import os
 import time
+import pickle
+import codecs
 
 class Job:
     def __init__(self, jobs_path='jobs', job_id='job', load_existing_job=False):
@@ -53,6 +55,33 @@ class Job:
 
         return self.last_task_id
 
+    def run_python_func(self, f, *args, interpreter='python3', **kwargs):
+        module_name = f.__module__
+        func_name = f.__name__
+
+        self_path = os.path.dirname(os.path.realpath(__file__))
+        self_relative_project_path = os.path.relpath(self_path, '.')
+
+        self.last_task_id += 1
+        task_name = get_task_name(self.last_task_id)
+        result_path = self.job_dir + '/' + task_name + '.func_res.pkl'
+
+        pickled_kwargs = codecs.encode(pickle.dumps(kwargs), "base64").decode()
+        pickled_args = codecs.encode(pickle.dumps(args), "base64").decode()
+
+        proc = subprocess.Popen([interpreter,
+                                 self_relative_project_path + '/function_caller.py',
+                                 module_name,
+                                 func_name,
+                                 result_path,
+                                 pickled_args,
+                                 pickled_kwargs], stdout=subprocess.PIPE)
+
+        stdout, stderr = proc.communicate()
+        log = stdout.decode("utf-8")
+        pickled_res = stdout.split(b'\n')[-2]
+        res = pickle.loads(codecs.decode(pickled_res, "base64"))
+        return res, log  # stdout.decode("utf-8")
 
     def wait(self):
         done = False
