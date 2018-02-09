@@ -8,7 +8,7 @@ from gridengine.compute_enviroment import GECluster
 
 
 class Job:
-    def __init__(self, jobs_path='jobs', job_id='job', load_existing_job=False, compute_environments=[GECluster()]):
+    def __init__(self, jobs_path='jobs', job_id='job', load_existing_job=False, compute_environments=[]):
         self.compute_environments = compute_environments
         self.output_dir = os.path.dirname(jobs_path + '/')
         self.last_task_id = -1
@@ -86,8 +86,9 @@ class Job:
         result_path = self.get_result_path(task_id)
 
         task_res = None
-        while task_res is None:
+        while wait and task_res is None:
             try:
+                self.compute_environments[0].sync_results()
                 with open(result_path, 'rb') as f:
                     task_res = pickle.load(f)
             except FileNotFoundError:
