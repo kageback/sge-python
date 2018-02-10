@@ -4,7 +4,7 @@ import time
 import pickle
 import codecs
 
-from gridengine.compute_enviroment import GECluster
+from gridengine.compute_enviroment import SGEEnvironment
 
 
 class Job:
