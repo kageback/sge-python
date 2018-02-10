@@ -42,7 +42,9 @@ class BaseEnvironment:
         for i in range(len(cmd_list)):
             cmd_list[i] = cmd_list[i].strip()
 
-        return ['ssh', self.remote] + cmd_list
+        cmd = 'ssh ' + self.remote + ' bash --login -c "' + ' '.join(cmd_list) + '"'
+
+        return cmd.split()
 
 
 class SGEEnvironment(BaseEnvironment):
