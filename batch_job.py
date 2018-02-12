@@ -8,11 +8,12 @@ from gridengine.compute_enviroment import SGEEnvironment
 
 
 class Job:
-    def __init__(self, jobs_path='jobs', job_id='job', load_existing_job=False, compute_environments=[]):
-        self.compute_environments = compute_environments
+    def __init__(self, jobs_path='jobs', job_id='job', load_existing_job=False):
+        self.compute_environments = []
         self.output_dir = os.path.dirname(jobs_path + '/')
         self.last_task_id = -1
         self.ge_job_ids = {}
+        self.task_env = {}
 
         if load_existing_job:
             self.job_id = job_id
@@ -37,6 +38,9 @@ class Job:
                     os.mkdir(self.job_dir)
                     break
 
+    def add_compute_environment(self, env):
+        self.compute_environments.append(env)
+
     def erase_job(self):
         os.rmdir(self.job_dir)
 
@@ -55,31 +59,37 @@ class Job:
         pickled_kwargs = codecs.encode(pickle.dumps(kwargs), "base64").decode()
         pickled_args = codecs.encode(pickle.dumps(args), "base64").decode()
 
-        self.ge_job_ids[self.last_task_id] = comp_env.submit_job(self, [self_relative_project_path + '/function_caller.py',
+        self.ge_job_ids[self.last_task_id] = comp_env.submit_job(self.get_task_name(self.last_task_id), [self_relative_project_path + '/function_caller.py',
                                                                        module_name,
                                                                        func_name,
                                                                        result_path,
                                                                        pickled_args,
                                                                        pickled_kwargs])
+        self.task_env[self.last_task_id] = comp_env
+
         return self.last_task_id
 
     def wait(self):
         done = False
         while(not done):
 
-            proc = subprocess.Popen('qstat', stdout=subprocess.PIPE)
-            stdout, stderr = proc.communicate()
-            lines = stdout.split(b'\n')
-
+            queued = 0
             running = 0
-            for line in lines[2:-1]:
-                if int(line.split()[0]) in self.ge_job_ids.values():
-                    running += 1
-            if running > 0:
-                print('\rwaiting for ' + str(running) + ' of ' + str(self.last_task_id+1) + ' tasks to fininsh', end="")
+            error = 0
+            for env in self.compute_environments:
+                q, r, e = env.queue_state()
+                queued += q
+                running += r
+                error += e
+
+            if queued + running > 0:
+                print('\rWaiting for ' + str(running) + ' running and ' + str(queued) + ' queued tasks to finish', end="")
                 time.sleep(1)
+            elif error > 0:
+                print('\nAll tasks terminated! ' + str(error) + ' tasks stuck in error state')
+                done = True
             else:
-                print('All tasks completed!')
+                print('\nAll tasks completed!')
                 done = True
 
     def get_result(self, task_id, wait=False):
@@ -88,7 +98,8 @@ class Job:
         task_res = None
         while wait and task_res is None:
             try:
-                self.compute_environments[0].sync_results()
+                self.task_env[task_id].sync_results()
+
                 with open(result_path, 'rb') as f:
                     task_res = pickle.load(f)
             except FileNotFoundError:
@@ -96,9 +107,22 @@ class Job:
 
         return task_res
 
-    def get_free_env(self):
-        # This func needs to be more clever to handle multiple environments
-        return self.compute_environments[0]
+    def get_free_env(self, wait=True):
+
+        free_env = None
+        max_free_queue_slots = 0
+        while wait and free_env is None:
+            for env in self.compute_environments:
+                free_queue_slots = env.queue_slots_available()
+                if free_queue_slots > max_free_queue_slots:
+                    max_free_queue_slots = free_queue_slots
+                    free_env = env
+            if free_env is None:
+                #print('\rWaiting for queue slot... ', end="")
+                time.sleep(1)
+        #print("Queued slot assigned.")
+
+        return free_env
 
     def get_next_task_id(self):
         self.last_task_id += 1
@@ -110,5 +134,5 @@ class Job:
         return result_path
 
     def get_task_name(self, task_id):
-        return 'task.' + str(task_id)
+        return str(self.job_id) + '.' + str(task_id)
 

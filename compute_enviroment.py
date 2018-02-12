@@ -2,35 +2,50 @@ import subprocess
 import os
 
 
-class BaseEnvironment:
+class SGEEnvironment:
 
-    def __init__(self, runtime_path='~/runtime/env/', interpreter='python3', interpreter_args='-u', remote=''):
+    def __init__(self, runtime_path='~/runtime/env/', output_folder='out', interpreter='python3', interpreter_args='-u',
+                 ge_gpu=-1, ge_aux_args='', remote='', queue_limit=1):
 
+        self.local_wd = './'
         self.wd = os.path.expanduser(runtime_path) if remote == '' else runtime_path
-        if len(self.wd) > 0 and self.wd[-1] != '/':
-            self.wd += '/'
+        self.wd = self.enforce_trailing_backslash(self.wd)
+
+        self.output_folder = self.enforce_trailing_backslash(output_folder)
 
         self.interpreter_cmd = interpreter + ' ' + interpreter_args
         self.remote = remote
+        self.queue_limit = queue_limit
 
         self.base_rsync_cmd = 'rsync -r --exclude __pycache__ --exclude .git --exclude .idea '
 
-    def submit_job(self, job, args):
-        self.sync_code()
+        self.qsub_base_args = 'qsub -b y -wd ' + self.wd + ' ' + ge_aux_args
+
+        if ge_gpu >= 0:
+            self.qsub_base_args += ' -l gpu=' + str(ge_gpu)
+
+        self.tasks = []
+
+    def enforce_trailing_backslash(self, path):
+        if len(path) > 0 and path[-1] != '/':
+            path += '/'
+        return path
 
     def sync_code(self):
         if self.remote != '':
-            cmd = self.base_rsync_cmd + '-e ssh ' + './ ' + self.remote + ':' + self.wd
+            cmd = self.base_rsync_cmd + '-e ssh ' + self.local_wd + ' ' + self.remote + ':' + self.wd
         else:
-            cmd = self.base_rsync_cmd + './ ' + self.wd
+            cmd = self.base_rsync_cmd + self.local_wd + ' ' + self.wd
 
         subprocess.Popen(cmd.split())
 
     def sync_results(self):
+        cmd = self.base_rsync_cmd
+
         if self.remote != '':
-            cmd = self.base_rsync_cmd + '-e ssh ' + self.remote + ':' + self.wd + ' .'
-        else:
-            cmd = self.base_rsync_cmd + self.wd + ' .'
+            cmd += '-e ssh ' + self.remote + ':'
+
+        cmd += self.wd + self.output_folder + ' ' + self.local_wd + self.output_folder
 
         subprocess.Popen(cmd.split())
 
@@ -38,7 +53,7 @@ class BaseEnvironment:
         if self.remote == '':
             return cmd_list
 
-        # ssh command no like \n so let's get rid of that kind of stuff
+        # ssh shell no like \n so let's get rid of that kind of stuff
         for i in range(len(cmd_list)):
             cmd_list[i] = cmd_list[i].strip()
 
@@ -46,26 +61,14 @@ class BaseEnvironment:
 
         return cmd.split()
 
+    def submit_job(self, task_name, args):
+        self.sync_code()
 
-class SGEEnvironment(BaseEnvironment):
+        task_args = ' -N ' + task_name + \
+                    ' -o ' + self.output_folder + task_name + '.log' + \
+                    ' -e ' + self.output_folder + task_name + '.error '
 
-    def __init__(self, runtime_path='~/runtime/env/', interpreter='python3', interpreter_args='-u', ge_gpu=-1, ge_aux_args='', remote=''):
-        super().__init__(runtime_path, interpreter, interpreter_args, remote=remote)
-
-
-
-        self.qsub_base_args = 'qsub -b y -wd ' + self.wd + ' ' + ge_aux_args
-
-        if ge_gpu >= 0:
-            self.qsub_base_args += ' -l gpu=' + str(ge_gpu)
-
-
-
-    def submit_job(self, job, args):
-        super(SGEEnvironment, self).submit_job(job, args)
-
-
-        qsub_str = self.qsub_base_args + self.task_args(job) + self.interpreter_cmd
+        qsub_str = self.qsub_base_args + task_args + self.interpreter_cmd
         qsub_cmd = qsub_str.split() + args
 
         proc = subprocess.Popen(self.ssh_remote(qsub_cmd), stdout=subprocess.PIPE)#, cwd=self.wd)
@@ -73,15 +76,36 @@ class SGEEnvironment(BaseEnvironment):
 
         out = stdout.split()
         ge_process_id = int(out[2])
+        self.tasks.append(ge_process_id)
         return ge_process_id
 
-    def task_args(self, job):
-         return ' -N ' + job.job_id + '.' + str(job.last_task_id) + \
-                ' -o ' + job.job_dir + '/' + job.get_task_name(job.last_task_id) + '.log' + \
-                ' -e ' + job.job_dir + '/' + job.get_task_name(job.last_task_id) + '.error '
+    def queue_state(self):
+        proc = subprocess.Popen(self.ssh_remote(['qstat']), stdout=subprocess.PIPE)
+        stdout, stderr = proc.communicate()
+        lines = stdout.split(b'\n')
+
+        queued = 0
+        running = 0
+        error = 0
+        for line in lines[2:-1]:
+            taskid = int(line.split()[0])
+            if taskid in self.tasks:
+                task_state = line.split()[4]
+                if task_state == b'qw':
+                    queued += 1
+                elif task_state == b'r':
+                    running += 1
+                else:
+                    error += 1
+
+        return queued, running, error
+
+    def queue_slots_available(self):
+        queued, running, error = self.queue_state()
+        return self.queue_limit - queued
 
 
-class SubProcessEnvironment(BaseEnvironment):
+class SubProcessEnvironment(SGEEnvironment):
 
     def __init__(self, runtime_path='~/runtime/env/', interpreter='python3', interpreter_args='-u'):
         super().__init__(runtime_path, interpreter, interpreter_args)
