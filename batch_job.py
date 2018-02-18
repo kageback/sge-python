@@ -54,17 +54,22 @@ class Job:
 
         task_id = self.get_next_task_id()
 
+        args_path = self.get_args_path(task_id)
         result_path = self.get_result_path(task_id)
 
-        pickled_kwargs = codecs.encode(pickle.dumps(kwargs), "base64").decode()
-        pickled_args = codecs.encode(pickle.dumps(args), "base64").decode()
+        with open(args_path, 'wb') as f:
+            pickle.dump([args, kwargs], f)
+
+        #pickled_kwargs = codecs.encode(pickle.dumps(kwargs), "base64").decode()
+        #pickled_args = codecs.encode(pickle.dumps(args), "base64").decode()
 
         self.ge_job_ids[self.last_task_id] = comp_env.submit_job(self.get_task_name(self.last_task_id), [self_relative_project_path + '/function_caller.py',
                                                                        module_name,
                                                                        func_name,
-                                                                       result_path,
-                                                                       pickled_args,
-                                                                       pickled_kwargs])
+                                                                       args_path,
+                                                                       result_path])
+                                                                       #pickled_args,
+                                                                       #pickled_kwargs])
         self.task_env[self.last_task_id] = comp_env
 
         return self.last_task_id
@@ -98,12 +103,13 @@ class Job:
         task_res = None
         while wait and task_res is None:
             try:
-                self.task_env[task_id].sync_results()
+
 
                 with open(result_path, 'rb') as f:
                     task_res = pickle.load(f)
             except FileNotFoundError:
                 time.sleep(1)
+                self.task_env[task_id].sync_results()
 
         return task_res
 
@@ -132,6 +138,12 @@ class Job:
         task_name = self.get_task_name(task_id)
         result_path = self.job_dir + '/' + task_name + '.func_res.pkl'
         return result_path
+
+    def get_args_path(self, task_id):
+        task_name = self.get_task_name(task_id)
+        result_path = self.job_dir + '/' + task_name + '.func_args.pkl'
+        return result_path
+
 
     def get_task_name(self, task_id):
         return str(self.job_id) + '.' + str(task_id)

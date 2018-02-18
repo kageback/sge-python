@@ -2,17 +2,31 @@ import pickle
 import codecs
 import os
 import sys
+import time
 
 sys.path.append(os.getcwd())
 
 #print(sys.argv)
 # copy and pop arguments
 arg_stack = sys.argv
-kwargs = pickle.loads(codecs.decode(arg_stack.pop().encode(), "base64"))
-args = pickle.loads(codecs.decode(arg_stack.pop().encode(), "base64"))
+#kwargs = pickle.loads(codecs.decode(arg_stack.pop().encode(), "base64"))
+#args = pickle.loads(codecs.decode(arg_stack.pop().encode(), "base64"))
 result_path = arg_stack.pop()
+args_path = arg_stack.pop()
 func_name = arg_stack.pop()
 module_name = arg_stack.pop()
+
+
+# load arguments
+arguments = None
+while arguments is None:
+    try:
+        with open(args_path, 'rb') as f:
+            arguments = pickle.load(f)
+    except FileNotFoundError:
+        time.sleep(1)
+args = arguments[0]
+kwargs = arguments[1]
 
 # call function
 m = __import__(module_name)

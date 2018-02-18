@@ -4,7 +4,7 @@ import os
 
 class SGEEnvironment:
 
-    def __init__(self, runtime_path='~/runtime/env/', output_folder='out', interpreter='python3', interpreter_args='-u',
+    def __init__(self, runtime_path='~/runtime/env/', output_folder='out', data_folder='data', interpreter='python3', interpreter_args='-u',
                  ge_gpu=-1, ge_aux_args='', remote='', queue_limit=1):
 
         self.local_wd = './'
@@ -12,12 +12,13 @@ class SGEEnvironment:
         self.wd = self.enforce_trailing_backslash(self.wd)
 
         self.output_folder = self.enforce_trailing_backslash(output_folder)
+        self.data_folder = self.enforce_trailing_backslash(data_folder)
 
         self.interpreter_cmd = interpreter + ' ' + interpreter_args
         self.remote = remote
         self.queue_limit = queue_limit
 
-        self.base_rsync_cmd = 'rsync -r --exclude __pycache__ --exclude .git --exclude .idea '
+        self.base_rsync_cmd = 'rsync -vr --exclude __pycache__ --exclude .git --exclude .idea --exclude ' + data_folder + ' '
 
         self.qsub_base_args = 'qsub -b y -wd ' + self.wd + ' ' + ge_aux_args
 
@@ -31,13 +32,25 @@ class SGEEnvironment:
             path += '/'
         return path
 
+    def sync_data(self):
+        cmd = 'rsync -vr --exclude __pycache__ '
+
+        if self.remote != '':
+            cmd = self.base_rsync_cmd + '-e ssh ' + self.local_wd + self.data_folder + ' ' + self.remote + ':' + self.wd + self.data_folder
+        else:
+            cmd = self.base_rsync_cmd + self.local_wd + self.data_folde + ' ' + self.wd + self.data_folde
+
+        proc = subprocess.Popen(cmd.split())
+        proc.wait()
+
     def sync_code(self):
         if self.remote != '':
             cmd = self.base_rsync_cmd + '-e ssh ' + self.local_wd + ' ' + self.remote + ':' + self.wd
         else:
             cmd = self.base_rsync_cmd + self.local_wd + ' ' + self.wd
 
-        subprocess.Popen(cmd.split())
+        proc = subprocess.Popen(cmd.split())
+        proc.wait()
 
     def sync_results(self):
         cmd = self.base_rsync_cmd
@@ -47,7 +60,8 @@ class SGEEnvironment:
 
         cmd += self.wd + self.output_folder + ' ' + self.local_wd + self.output_folder
 
-        subprocess.Popen(cmd.split())
+        proc = subprocess.Popen(cmd.split())
+        proc.wait()
 
     def ssh_remote(self, cmd_list):
         if self.remote == '':
