@@ -97,19 +97,28 @@ class Job:
                 print('\nAll tasks completed!')
                 done = True
 
-    def get_result(self, task_id, wait=False):
-        result_path = self.get_result_path(task_id)
+    def get_args(self, task_id):
+        args_path = self.get_args_path(task_id)
+        try:
+            with open(args_path, 'rb') as f:
+                arguments = pickle.load(f)
+            args = arguments[0]
+            kwargs = arguments[1]
+            return args, kwargs
+        except FileNotFoundError:
+            return None, None
 
+    def get_result(self, task_id, wait=True):
+        result_path = self.get_result_path(task_id)
         task_res = None
         while wait and task_res is None:
+            if not os.path.isfile(result_path):
+                self.task_env[task_id].sync_results()
             try:
-
-
                 with open(result_path, 'rb') as f:
                     task_res = pickle.load(f)
             except FileNotFoundError:
-                time.sleep(1)
-                self.task_env[task_id].sync_results()
+                time.sleep(10)
 
         return task_res
 
