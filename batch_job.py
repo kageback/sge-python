@@ -60,19 +60,35 @@ class Job:
         with open(args_path, 'wb') as f:
             pickle.dump([args, kwargs], f)
 
-        #pickled_kwargs = codecs.encode(pickle.dumps(kwargs), "base64").decode()
-        #pickled_args = codecs.encode(pickle.dumps(args), "base64").decode()
 
-        self.ge_job_ids[self.last_task_id] = comp_env.submit_job(self.get_task_name(self.last_task_id), [self_relative_project_path + '/function_caller.py',
-                                                                       module_name,
-                                                                       func_name,
-                                                                       args_path,
-                                                                       result_path])
-                                                                       #pickled_args,
-                                                                       #pickled_kwargs])
+        self.ge_job_ids[self.last_task_id] = comp_env.submit_job(self.get_task_name(self.last_task_id),
+                                                                 [self_relative_project_path + '/function_caller.py',
+                                                                 module_name,
+                                                                 func_name,
+                                                                 args_path,
+                                                                 result_path])
+
         self.task_env[self.last_task_id] = comp_env
 
         return self.last_task_id
+
+    def rerun_task(self, f, task_id):
+        module_name = f.__module__
+        func_name = f.__name__
+        comp_env = self.get_free_env()
+
+        self_path = os.path.dirname(os.path.realpath(__file__))
+        self_relative_project_path = os.path.relpath(self_path, '.')
+
+        args_path = self.get_args_path(task_id)
+        result_path = self.get_result_path(task_id)
+
+        self.ge_job_ids[self.last_task_id] = comp_env.submit_job(self.get_task_name(self.last_task_id),
+                                                                 [self_relative_project_path + '/function_caller.py',
+                                                                 module_name,
+                                                                 func_name,
+                                                                 args_path,
+                                                                 result_path])
 
     def wait(self):
         done = False
@@ -89,7 +105,7 @@ class Job:
 
             if queued + running > 0:
                 print('\rWaiting for ' + str(running) + ' running and ' + str(queued) + ' queued tasks to finish', end="")
-                time.sleep(1)
+                time.sleep(10)
             elif error > 0:
                 print('\nAll tasks terminated! ' + str(error) + ' tasks stuck in error state')
                 done = True

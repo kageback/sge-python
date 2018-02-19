@@ -6,11 +6,8 @@ import time
 
 sys.path.append(os.getcwd())
 
-#print(sys.argv)
 # copy and pop arguments
 arg_stack = sys.argv
-#kwargs = pickle.loads(codecs.decode(arg_stack.pop().encode(), "base64"))
-#args = pickle.loads(codecs.decode(arg_stack.pop().encode(), "base64"))
 result_path = arg_stack.pop()
 args_path = arg_stack.pop()
 func_name = arg_stack.pop()
