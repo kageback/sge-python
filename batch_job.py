@@ -134,7 +134,7 @@ class Job:
                 with open(result_path, 'rb') as f:
                     task_res = pickle.load(f)
             except FileNotFoundError:
-                time.sleep(10)
+                time.sleep(60)
 
         return task_res
 

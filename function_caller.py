@@ -25,6 +25,8 @@ while arguments is None:
 args = arguments[0]
 kwargs = arguments[1]
 
+print(arguments)
+
 # call function
 m = __import__(module_name)
 f = getattr(m, func_name)
