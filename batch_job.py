@@ -83,7 +83,7 @@ class Job:
         args_path = self.get_args_path(task_id)
         result_path = self.get_result_path(task_id)
 
-        self.ge_job_ids[self.last_task_id] = comp_env.submit_job(self.get_task_name(self.last_task_id),
+        self.ge_job_ids[self.last_task_id] = comp_env.submit_job(self.get_task_name(task_id),
                                                                  [self_relative_project_path + '/function_caller.py',
                                                                  module_name,
                                                                  func_name,
