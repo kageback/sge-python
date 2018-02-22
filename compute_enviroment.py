@@ -76,8 +76,6 @@ class SGEEnvironment:
         return cmd.split()
 
     def submit_job(self, task_name, args):
-        self.sync_code()
-
         task_args = ' -N ' + task_name + \
                     ' -o ' + self.output_folder + task_name + '.log' + \
                     ' -e ' + self.output_folder + task_name + '.error '

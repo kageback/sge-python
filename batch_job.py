@@ -60,6 +60,7 @@ class Job:
         with open(args_path, 'wb') as f:
             pickle.dump([args, kwargs], f)
 
+        comp_env.sync_code()  # Needs to at least sync arguments
 
         self.ge_job_ids[self.last_task_id] = comp_env.submit_job(self.get_task_name(self.last_task_id),
                                                                  [self_relative_project_path + '/function_caller.py',
