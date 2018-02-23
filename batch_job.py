@@ -1,77 +1,61 @@
-import subprocess
 import os
 import time
 import pickle
-import codecs
 
-from gridengine.compute_enviroment import SGEEnvironment
+from gridengine.task import Task
+
+def save(job):
+    with open(job.job_dir + "job.pkl", 'wb') as f:
+        pickle.dump(job, f)
+
+
+def load(job_id, jobs_base_path='jobs'):
+    jobs_base_path = os.path.dirname(jobs_base_path + '/') + '/'
+    save_path = jobs_base_path + job_id + "/job.pkl"
+    with open(save_path, 'rb') as f:
+        return pickle.load(f)
 
 
 class Job:
-    def __init__(self, jobs_path='jobs', job_id='job', load_existing_job=False):
+    def __init__(self, jobs_base_path='jobs', job_id_prefix='job'):
+
+        jobs_base_path = os.path.dirname(jobs_base_path + '/') + '/'
+
         self.compute_environments = []
-        self.output_dir = os.path.dirname(jobs_path + '/')
-        self.last_task_id = -1
-        self.ge_job_ids = {}
-        self.task_env = {}
+        self.tasks = []
 
-        if load_existing_job:
-            self.job_id = job_id
-            self.job_dir = self.output_dir + '/' + self.job_id
+        # Create job directory
+        if not os.path.isdir(jobs_base_path):
+            print('Jobs directory missing. Creating directory: ' + os.path.realpath(jobs_base_path))
+            os.mkdir(jobs_base_path)
+        i = 0
+        while(True):
+            self.job_name = job_id_prefix + '.' + str(i)
+            self.job_dir = jobs_base_path + self.job_name + '/'
 
-            if not os.path.isdir(self.job_dir):
-                raise ImportError('Job missing! ', self.job_dir)
-
-        else: # Create new job (and if nessasary jobs directory)
-            if not os.path.isdir(self.output_dir):
-                print('Jobs directory missing. Creating directory: ' + os.path.realpath(self.output_dir))
-                os.mkdir(self.output_dir)
-
-            i = 0
-            while(True):
-                self.job_id = job_id + '.' + str(i)
-                self.job_dir = self.output_dir + '/' + self.job_id
-
-                if os.path.isdir(self.job_dir):
-                    i += 1
-                else:
-                    os.mkdir(self.job_dir)
-                    break
+            if os.path.isdir(self.job_dir):
+                i += 1
+            else:
+                os.mkdir(self.job_dir)
+                break
 
     def add_compute_environment(self, env):
         self.compute_environments.append(env)
 
-    def erase_job(self):
-        os.rmdir(self.job_dir)
-
     def run_function(self, f, *args, **kwargs):
-        module_name = f.__module__
-        func_name = f.__name__
+
         comp_env = self.get_free_env()
 
-        self_path = os.path.dirname(os.path.realpath(__file__))
-        self_relative_project_path = os.path.relpath(self_path, '.')
+        task = Task(comp_env, self.job_name, len(self.tasks))
+        self.tasks.append(task)
 
-        task_id = self.get_next_task_id()
+        task.run_function(f, args, kwargs)
 
-        args_path = self.get_args_path(task_id)
-        result_path = self.get_result_path(task_id)
+        return task
 
-        with open(args_path, 'wb') as f:
-            pickle.dump([args, kwargs], f)
-
-        comp_env.sync_code()  # Needs to at least sync arguments
-
-        self.ge_job_ids[self.last_task_id] = comp_env.submit_job(self.get_task_name(self.last_task_id),
-                                                                 [self_relative_project_path + '/function_caller.py',
-                                                                 module_name,
-                                                                 func_name,
-                                                                 args_path,
-                                                                 result_path])
-
-        self.task_env[self.last_task_id] = comp_env
-
-        return self.last_task_id
+    def _create_task(self):
+        self.last_task_id += 1
+        return
 
     def rerun_task(self, f, task_id):
         module_name = f.__module__
@@ -156,21 +140,17 @@ class Job:
 
         return free_env
 
-    def get_next_task_id(self):
-        self.last_task_id += 1
-        return self.last_task_id
 
-    def get_result_path(self, task_id):
-        task_name = self.get_task_name(task_id)
-        result_path = self.job_dir + '/' + task_name + '.func_res.pkl'
-        return result_path
-
-    def get_args_path(self, task_id):
-        task_name = self.get_task_name(task_id)
-        result_path = self.job_dir + '/' + task_name + '.func_args.pkl'
-        return result_path
+if __name__ == "__main__":
+    # Test/demo code
 
 
-    def get_task_name(self, task_id):
-        return str(self.job_id) + '.' + str(task_id)
+    job = Job()
+    jobname = job.job_name
+
+    save(job)
+
+    job = load(jobname)
+
+    print(job)
 

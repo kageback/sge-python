@@ -1,15 +1,16 @@
 import subprocess
 import os
+import gridengine.rsync as rsync
 
 
 class SGEEnvironment:
 
-    def __init__(self, runtime_path='~/runtime/env/', output_folder='out', data_folder='data', interpreter='python3', interpreter_args='-u',
+    def __init__(self, cluster_wd='~/runtime/env/', output_folder='out', data_folder='data', interpreter='python3', interpreter_args='-u',
                  ge_gpu=-1, ge_aux_args='', remote='', queue_limit=1):
 
         self.local_wd = './'
-        self.wd = os.path.expanduser(runtime_path) if remote == '' else runtime_path
-        self.wd = self.enforce_trailing_backslash(self.wd)
+        self.cluster_wd = os.path.expanduser(cluster_wd) if remote == '' else cluster_wd
+        self.cluster_wd = self.enforce_trailing_backslash(self.cluster_wd)
 
         self.output_folder = self.enforce_trailing_backslash(output_folder)
         self.data_folder = self.enforce_trailing_backslash(data_folder)
@@ -18,39 +19,27 @@ class SGEEnvironment:
         self.remote = remote
         self.queue_limit = queue_limit
 
-        self.base_rsync_cmd = 'rsync -vr --exclude __pycache__ --exclude .git --exclude .idea --exclude ' + data_folder + ' '
 
-        self.qsub_base_args = 'qsub -b y -wd ' + self.wd + ' ' + ge_aux_args
+        self.qsub_base_args = 'qsub -b y -wd ' + self.cluster_wd + ' ' + ge_aux_args
 
         if ge_gpu >= 0:
             self.qsub_base_args += ' -l gpu=' + str(ge_gpu)
 
-        self.tasks = []
+        self.sge_jobids = []
 
     def enforce_trailing_backslash(self, path):
         if len(path) > 0 and path[-1] != '/':
             path += '/'
         return path
 
-    def sync_data(self):
-        cmd = 'rsync -vr --exclude __pycache__ '
-
-        if self.remote != '':
-            cmd = self.base_rsync_cmd + '-e ssh ' + self.local_wd + self.data_folder + ' ' + self.remote + ':' + self.wd + self.data_folder
+    def sync_to_cluster(self, from_path, to_path, skip_folders=['__pycache__', '.git', '.idea']):
+        if os.path.isfile(from_path):
+            pass
+        elif os.path.isdir(from_path):
+            rsync.sync_folder(from_path, to_path, skip_folders=skip_folders, remote_host=self.remote)
         else:
-            cmd = self.base_rsync_cmd + self.local_wd + self.data_folde + ' ' + self.wd + self.data_folde
+            raise IOError('rsync error. No such file or folder', from_path)
 
-        proc = subprocess.Popen(cmd.split())
-        proc.wait()
-
-    def sync_code(self):
-        if self.remote != '':
-            cmd = self.base_rsync_cmd + '-e ssh ' + self.local_wd + ' ' + self.remote + ':' + self.wd
-        else:
-            cmd = self.base_rsync_cmd + self.local_wd + ' ' + self.wd
-
-        proc = subprocess.Popen(cmd.split())
-        proc.wait()
 
     def sync_results(self):
         cmd = self.base_rsync_cmd
@@ -58,7 +47,7 @@ class SGEEnvironment:
         if self.remote != '':
             cmd += '-e ssh ' + self.remote + ':'
 
-        cmd += self.wd + self.output_folder + ' ' + self.local_wd + self.output_folder
+        cmd += self.cluster_wd + self.output_folder + ' ' + self.local_wd + self.output_folder
 
         proc = subprocess.Popen(cmd.split())
         proc.wait()
@@ -88,7 +77,7 @@ class SGEEnvironment:
 
         out = stdout.split()
         ge_process_id = int(out[2])
-        self.tasks.append(ge_process_id)
+        self.sge_jobids.append(ge_process_id)
         return ge_process_id
 
     def queue_state(self):
@@ -101,7 +90,7 @@ class SGEEnvironment:
         error = 0
         for line in lines[2:-1]:
             taskid = int(line.split()[0])
-            if taskid in self.tasks:
+            if taskid in self.sge_jobids:
                 task_state = line.split()[4]
                 if task_state == b'qw':
                     queued += 1
@@ -115,18 +104,3 @@ class SGEEnvironment:
     def queue_slots_available(self):
         queued, running, error = self.queue_state()
         return self.queue_limit - queued
-
-
-class SubProcessEnvironment(SGEEnvironment):
-
-    def __init__(self, runtime_path='~/runtime/env/', interpreter='python3', interpreter_args='-u'):
-        super().__init__(runtime_path, interpreter, interpreter_args)
-
-    def submit_job(self, job, args):
-        super(SubProcessEnvironment, self).submit_job(job, args)
-
-        cmd = self.interpreter_cmd.split() + args
-
-        proc = subprocess.Popen(cmd, cwd=self.wd)
-
-        return proc.pid
