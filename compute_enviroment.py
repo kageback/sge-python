@@ -9,6 +9,8 @@ class SGEEnvironment:
                  ge_gpu=-1, ge_aux_args='', host='localhost', queue_limit=1):
 
         self.local_wd = './'
+        self.exclude = ['__pycache__', '.git', '.idea']
+
         self.cluster_wd = os.path.expanduser(cluster_wd) if host == 'localhost' else cluster_wd
         self.cluster_wd = enforce_trailing_backslash(self.cluster_wd)
 
@@ -20,22 +22,22 @@ class SGEEnvironment:
         if ge_gpu >= 0:
             self.qsub_base_args += ' -l gpu=' + str(ge_gpu)
 
-    def sync_to_cluster(self, local_path, cluster_path, recursive=False, skip_folders=['__pycache__', '.git', '.idea']):
-
+    def sync_to_cluster(self, local_path, cluster_path, recursive=False, exclude=[]):
+        exclude += self.exclude
         if os.path.isfile(local_path):
             pass
         elif os.path.isdir(local_path):
-            rsync.sync_folder(local_path, cluster_path, skip_folders=skip_folders, remote_host=self.host)
+            rsync.sync_folder(local_path, cluster_path, exclude=exclude, remote_host=self.host)
         else:
             raise IOError('rsync error. No such file or folder', local_path)
 
-    def sync_from_cluster(self, local_path, cluster_path, recursive=False, skip_folders=[]):
-        rsync.sync_folder(local_path, cluster_path, skip_folders=skip_folders, remote_host=self.host, local_to_remote=False)
+    def sync_from_cluster(self, local_path, cluster_path, recursive=False, exclude=[]):
+        rsync.sync_folder(local_path, cluster_path, exclude=exclude, remote_host=self.host, local_to_remote=False)
 
     def submit_job(self, task_name, args, log_folder="./"):
         log_folder = enforce_trailing_backslash(log_folder)
         task_args = ' -N ' + task_name + \
-                    ' -o ' + log_folder + task_name + '.log' + \
+                    ' -o ' + log_folder + task_name + '. ' + \
                     ' -e ' + log_folder + task_name + '.error '
 
         qsub_str = self.qsub_base_args + task_args + self.interpreter_cmd
@@ -55,19 +57,18 @@ class SGEEnvironment:
 
         queued = 0
         running = 0
-        error = 0
+        other = 0
         for line in lines[2:-1]:
-            taskid = int(line.split()[0])
-            if taskid in self.sge_jobids:
-                task_state = line.split()[4]
-                if task_state == b'qw':
-                    queued += 1
-                elif task_state == b'r':
-                    running += 1
-                else:
-                    error += 1
+            # taskid = int(line.split()[0])
+            task_state = line.split()[4]
+            if task_state == b'qw':
+                queued += 1
+            elif task_state == b'r':
+                running += 1
+            else:
+                other += 1
 
-        return queued, running, error
+        return queued, running, other
 
     def queue_slots_available(self):
         queued, running, error = self.queue_state()

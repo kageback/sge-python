@@ -15,23 +15,23 @@ def load(task_name, output_folder, job_folder='jobs'):
         return pickle.load(f)
 
 class Task:
-    def __init__(self, comp_env, task_name="task", output_folder="./",):
-        self.task_name = task_name
-        self.comp_env = comp_env
+    def __init__(self, f, args, kwargs, task_name="task", output_folder="./",):
+        self.function = f
+        self.args = args
+        self.kwargs = kwargs
 
-        self.function = None
-        self.args = None
-        self.kwargs = None
-        self.result = None
+        self.task_name = task_name
 
         self.output_folder = enforce_trailing_backslash(output_folder)
         self.task_path = output_folder + task_name + ".pkl"
 
-    def run_function(self, f, args, kwargs):
-        self.function = f
-        self.args = args
-        self.kwargs = kwargs
+        self.comp_env = None
+        self.result = None
+
         save(self)
+
+    def schedule(self, comp_env):
+        self.comp_env = comp_env
 
         self.comp_env.sync_to_cluster(self.comp_env.local_wd + self.output_folder,
                                       self.comp_env.cluster_wd + self.output_folder)

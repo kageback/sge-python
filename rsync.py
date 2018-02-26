@@ -2,10 +2,10 @@ import subprocess
 import os
 
 
-def sync_folder(local_path, remote_path, remote_host='localhost', local_to_remote=True, skip_folders=[], aux_args=""):
+def sync_folder(local_path, remote_path, remote_host='localhost', local_to_remote=True, exclude=[], aux_args=""):
     cmd = ['rsync', '-vr'] + _shell(remote_host) + aux_args.split()
 
-    for folder in skip_folders:
+    for folder in exclude:
         cmd += ['--exclude', folder]
 
     if local_to_remote:

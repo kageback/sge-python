@@ -1,7 +1,6 @@
 import pickle
 import os
 import sys
-import time
 
 sys.path.append(os.getcwd())
 
@@ -14,13 +13,12 @@ task_path = arg_stack.pop()
 with open(task_path, 'rb') as f:
     task = pickle.load(f)
 
-args = task.args
-kwargs = task.kwargs
-
-print(task)
+# Print arguments to log
+print('args =', task.args)
+print('kwargs =', task.kwargs)
 
 # call function
-task.result = task.function(*args, **kwargs)
+task.result = task.function(*task.args, **task.kwargs)
 
 # save the results
 with open(task_path, 'wb') as f:

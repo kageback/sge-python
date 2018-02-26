@@ -47,12 +47,26 @@ class Job:
         comp_env = self.get_free_env()
 
         task_name = self.job_name + '.' + str(len(self.tasks))
-        task = Task(comp_env, task_name, self.job_dir)
+
+        task = Task(f, args, kwargs, task_name, self.job_dir)
         self.tasks.append(task)
 
-        task.run_function(f, args, kwargs)
+        task.schedule(comp_env)
 
         return task
+
+    def get_free_env(self, wait=True):
+        free_env = None
+        max_free_queue_slots = 0
+        while wait and free_env is None:
+            for env in self.compute_environments:
+                free_queue_slots = env.queue_slots_available()
+                if free_queue_slots > max_free_queue_slots:
+                    max_free_queue_slots = free_queue_slots
+                    free_env = env
+            if free_env is None:
+                time.sleep(5)
+        return free_env
 
     def wait(self):
         done = False
@@ -78,20 +92,4 @@ class Job:
                 done = True
 
 
-
-    def get_free_env(self, wait=True):
-        free_env = None
-        max_free_queue_slots = 0
-        while wait and free_env is None:
-            for env in self.compute_environments:
-                free_queue_slots = env.queue_slots_available()
-                if free_queue_slots > max_free_queue_slots:
-                    max_free_queue_slots = free_queue_slots
-                    free_env = env
-            if free_env is None:
-                #print('\rWaiting for queue slot... ', end="")
-                time.sleep(1)
-        #print("Queued slot assigned.")
-
-        return free_env
 
