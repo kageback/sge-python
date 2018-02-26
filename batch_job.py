@@ -46,16 +46,13 @@ class Job:
 
         comp_env = self.get_free_env()
 
-        task = Task(comp_env, self.job_name, len(self.tasks))
+        task_name = self.job_name + '.' + str(len(self.tasks))
+        task = Task(comp_env, task_name, self.job_dir)
         self.tasks.append(task)
 
         task.run_function(f, args, kwargs)
 
         return task
-
-    def _create_task(self):
-        self.last_task_id += 1
-        return
 
     def rerun_task(self, f, task_id):
         module_name = f.__module__
@@ -124,7 +121,6 @@ class Job:
         return task_res
 
     def get_free_env(self, wait=True):
-
         free_env = None
         max_free_queue_slots = 0
         while wait and free_env is None:

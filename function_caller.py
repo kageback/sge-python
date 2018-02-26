@@ -1,5 +1,4 @@
 import pickle
-import codecs
 import os
 import sys
 import time
