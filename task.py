@@ -23,15 +23,14 @@ class Task:
         self.task_name = task_name
 
         self.output_folder = enforce_trailing_backslash(output_folder)
-        self.task_path = output_folder + task_name + ".pkl"
+        self.task_path = output_folder + task_name + ".task.pkl"
+        self.result_path = output_folder + task_name + ".result.pkl"
 
         self.comp_env = None
-        self.result = None
-
-        save(self)
 
     def schedule(self, comp_env):
         self.comp_env = comp_env
+        save(self)
 
         self.comp_env.sync_to_cluster(self.comp_env.local_wd + self.output_folder,
                                       self.comp_env.cluster_wd + self.output_folder)
@@ -47,10 +46,10 @@ class Task:
         task_res = None
         retry = False
         while wait and task_res is None:
-            with open(self.task_path, 'rb') as f:
-                task = pickle.load(f)
-            task_res = task.result
-            if task_res is None:
+            try:
+                with open(self.result_path, 'rb') as f:
+                    task_res = pickle.load(f)
+            except FileNotFoundError:
                 if retry:
                     time.sleep(retry_interval)
                 else:
