@@ -54,24 +54,6 @@ class Job:
 
         return task
 
-    def rerun_task(self, f, task_id):
-        module_name = f.__module__
-        func_name = f.__name__
-        comp_env = self.get_free_env()
-
-        self_path = os.path.dirname(os.path.realpath(__file__))
-        self_relative_project_path = os.path.relpath(self_path, '.')
-
-        args_path = self.get_args_path(task_id)
-        result_path = self.get_result_path(task_id)
-
-        self.ge_job_ids[self.last_task_id] = comp_env.submit_job(self.get_task_name(task_id),
-                                                                 [self_relative_project_path + '/function_caller.py',
-                                                                 module_name,
-                                                                 func_name,
-                                                                 args_path,
-                                                                 result_path])
-
     def wait(self):
         done = False
         while(not done):
@@ -95,30 +77,7 @@ class Job:
                 print('\nAll tasks completed!')
                 done = True
 
-    def get_args(self, task_id):
-        args_path = self.get_args_path(task_id)
-        try:
-            with open(args_path, 'rb') as f:
-                arguments = pickle.load(f)
-            args = arguments[0]
-            kwargs = arguments[1]
-            return args, kwargs
-        except FileNotFoundError:
-            return None, None
 
-    def get_result(self, task_id, wait=True):
-        result_path = self.get_result_path(task_id)
-        task_res = None
-        while wait and task_res is None:
-            if not os.path.isfile(result_path):
-                self.task_env[task_id].sync_results()
-            try:
-                with open(result_path, 'rb') as f:
-                    task_res = pickle.load(f)
-            except FileNotFoundError:
-                time.sleep(60)
-
-        return task_res
 
     def get_free_env(self, wait=True):
         free_env = None
@@ -135,18 +94,4 @@ class Job:
         #print("Queued slot assigned.")
 
         return free_env
-
-
-if __name__ == "__main__":
-    # Test/demo code
-
-
-    job = Job()
-    jobname = job.job_name
-
-    save(job)
-
-    job = load(jobname)
-
-    print(job)
 
