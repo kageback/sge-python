@@ -1,5 +1,5 @@
 import os
-import pickle
+import dill as pickle
 import time
 from gridengine.misc import *
 
@@ -27,6 +27,7 @@ class Task:
         self.result_path = output_folder + task_name + ".result.pkl"
 
         self.comp_env = None
+        self.ge_jobid = None
 
     def schedule(self, comp_env):
         self.comp_env = comp_env
@@ -38,9 +39,9 @@ class Task:
         self_path = os.path.dirname(os.path.realpath(__file__))
         self_relative_project_path = os.path.relpath(self_path, '.')
 
-        self.comp_env.submit_job(self.task_name,
-                                 [self_relative_project_path + '/function_caller.py', self.task_path],
-                                 self.output_folder)
+        self.ge_jobid = self.comp_env.submit_job(self.task_name,
+                                                 [self_relative_project_path + '/function_caller.py', self.task_path],
+                                                 self.output_folder)
 
     def get_result(self, wait=True, retry_interval=5):
         task_res = None

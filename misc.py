@@ -12,3 +12,11 @@ def select_shell(cmd_list, host='localhost'):
     else:
         cmd = 'ssh ' + host + ' bash --login -c "' + ' '.join(cmd_list) + '"'
         return cmd.split()
+
+
+
+def slugify(value):
+    import re
+    value = re.sub('[^\w\s-]', '', value).strip()
+    value = re.sub('[-\s]+', '-', value)
+    return value

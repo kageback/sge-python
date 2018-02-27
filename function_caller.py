@@ -1,4 +1,4 @@
-import pickle
+import dill as pickle
 import os
 import sys
 
@@ -12,6 +12,9 @@ task_path = arg_stack.pop()
 # load task
 with open(task_path, 'rb') as f:
     task = pickle.load(f)
+
+# print func ref to log
+print('function = ', task.function)
 
 # Print arguments to log
 print('args =', task.args)

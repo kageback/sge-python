@@ -7,7 +7,7 @@ from gridengine.misc import *
 #import urllib
 #local_external_ip = urllib.request.urlopen('https://ident.me').read().decode('utf8')
 
-class SGEEnvironment:
+class Queue:
     def __init__(self, cluster_wd='~/runtime/env/', interpreter='python3', interpreter_args='-u',
                  ge_gpu=-1, ge_aux_args='', host='localhost', queue_limit=1):
 
@@ -56,7 +56,7 @@ class SGEEnvironment:
         ge_process_id = int(out[2])
         return ge_process_id
 
-    def queue_state(self):
+    def queue_state(self, job=None):
         proc = subprocess.Popen(select_shell(['qstat'], self.host), stdout=subprocess.PIPE)
         stdout, stderr = proc.communicate()
         lines = stdout.split(b'\n')
@@ -65,14 +65,15 @@ class SGEEnvironment:
         running = 0
         other = 0
         for line in lines[2:-1]:
-            # taskid = int(line.split()[0])
-            task_state = line.split()[4]
-            if task_state == b'qw':
-                queued += 1
-            elif task_state == b'r':
-                running += 1
-            else:
-                other += 1
+            taskid = int(line.split()[0])
+            if job == None or (taskid in [task.ge_jobid for task in job.tasks]):
+                task_state = line.split()[4]
+                if task_state == b'qw':
+                    queued += 1
+                elif task_state == b'r':
+                    running += 1
+                else:
+                    other += 1
 
         return queued, running, other
 
