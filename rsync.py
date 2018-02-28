@@ -2,15 +2,20 @@ import subprocess
 import os
 
 
-def sync_folder(local_path, remote_path, remote_host='localhost', local_to_remote=True, exclude=[], aux_args=""):
+from enum import Enum
+class SyncTo(Enum):
+    REMOTE = 1
+    LOCAL = 2
+
+def sync_folder(local_path, remote_path, sync_to, remote_host='localhost', exclude=[], aux_args=""):
     cmd = ['rsync', '-vr'] + _shell(remote_host) + aux_args.split()
 
     for folder in exclude:
         cmd += ['--exclude', folder]
 
-    if local_to_remote:
+    if sync_to is SyncTo.REMOTE:
         cmd += [local_path, _host_path(remote_path, remote_host)]
-    else:
+    elif sync_to is SyncTo.LOCAL:
         cmd += [_host_path(remote_path, remote_host), local_path]
 
     process = subprocess.Popen(cmd)

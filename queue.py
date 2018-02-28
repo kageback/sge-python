@@ -3,6 +3,7 @@ import os
 import socket
 import gridengine.rsync as rsync
 from gridengine.misc import *
+import gridengine.function_caller as function_caller
 
 #import urllib
 #local_external_ip = urllib.request.urlopen('https://ident.me').read().decode('utf8')
@@ -33,14 +34,9 @@ class Queue:
         if ge_gpu >= 0:
             self.qsub_base_args += ' -l gpu=' + str(ge_gpu)
 
-    def sync_to_cluster(self, local_path, cluster_path, exclude=[]):
+    def sync(self, local_path, cluster_path, sync_to, exclude=[],):
         exclude += self.exclude
-        rsync.sync_folder(local_path, cluster_path, exclude=exclude, remote_host=self.host)
-
-
-    def sync_from_cluster(self, local_path, cluster_path, exclude=[]):
-        exclude += self.exclude
-        rsync.sync_folder(local_path, cluster_path, exclude=exclude, remote_host=self.host, local_to_remote=False)
+        rsync.sync_folder(local_path, cluster_path, sync_to, exclude=exclude, remote_host=self.host)
 
     def submit_job(self, task_name, args, log_folder="./"):
         log_folder = enforce_trailing_backslash(log_folder)
@@ -82,3 +78,18 @@ class Queue:
     def queue_slots_available(self):
         queued, running, error = self.queue_state()
         return self.queue_limit - queued
+
+
+class Local(Queue):
+    def sync(self, local_path, cluster_path, sync_to, exclude=[]):
+        print('Local: no need to sync')
+
+    def queue_slots_available(self):
+        return 1
+
+    def queue_state(self, job=None):
+        return 0,0,0
+
+    def submit_job(self, task_name, args, log_folder="./"):
+        function_caller.main(args[1:])
+        return 1

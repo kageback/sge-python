@@ -38,14 +38,12 @@ class Job:
                 os.mkdir(self.job_dir)
                 break
 
-    def run_function(self, comp_env, f, args, kwargs):
+    def add_function(self, f, *args, **kwargs):
 
         task_name = self.job_name + '.' + str(len(self.tasks))
 
         task = Task(f, args, kwargs, task_name, self.job_dir)
         self.tasks.append(task)
-
-        task.schedule(comp_env)
 
         return task
 

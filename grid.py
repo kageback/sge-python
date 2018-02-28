@@ -1,23 +1,32 @@
 import time
 from gridengine.job import Job
 from gridengine.misc import *
+from gridengine import SyncTo
 
 
 class Grid:
-    def __init__(self, local_wd='./', jobs_base_path='jobs', exclude=''):
-        self.local_wd = local_wd
+    def __init__(self, jobs_base_path='jobs'):
         self.jobs_base_path = enforce_trailing_backslash(jobs_base_path)
-        self.exclude = exclude
         self.queues = []
 
     def add_queue(self, queue):
-        queue.sync_to_cluster(self.local_wd, queue.cluster_wd, self.exclude)
         self.queues.append(queue)
 
+    def sync(self, local_path, cluster_path, sync_to, exclude=[]):
+        for queue in self.queues:
+            queue.sync(local_path, cluster_path, sync_to, exclude)
+
+    def run_job(self, job):
+        for task in job.tasks:
+            queue = self.get_free_queue()
+            task.schedule(queue)
+
+
     def run_function(self, f, *args, **kwargs):
-        comp_env = self.get_free_queue()
+
         job = Job(jobs_base_path=self.jobs_base_path, job_id_prefix=slugify(f.__name__))
-        task = job.run_function(comp_env, f, args, kwargs)
+        queue = self.get_free_queue()
+        task = job.add_function(queue, f, args, kwargs)
         self.wait(job)
         return task.get_result()
 
@@ -28,7 +37,7 @@ class Grid:
         for args in iterator:
             args = ensure_iter(args)
             queue = self.get_free_queue()
-            tasks.append(job.run_function(queue, f, args, {}))
+            tasks.append(job.add_function(queue, f, args, {}))
         self.wait(job)
         #result = [task.get_result() for task in tasks]
         result = map(lambda task: task.get_result(), tasks)

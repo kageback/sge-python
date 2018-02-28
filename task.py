@@ -2,6 +2,7 @@ import os
 import dill as pickle
 import time
 from gridengine.misc import *
+from gridengine import SyncTo
 
 def save(task):
     with open(task.task_path, 'wb') as f:
@@ -26,22 +27,23 @@ class Task:
         self.task_path = output_folder + task_name + ".task.pkl"
         self.result_path = output_folder + task_name + ".result.pkl"
 
-        self.comp_env = None
+        self.queue = None
         self.ge_jobid = None
 
     def schedule(self, queue):
-        self.comp_env = queue
+        self.queue = queue
         save(self)
 
-        self.comp_env.sync_to_cluster(self.comp_env.local_wd + self.output_folder,
-                                      self.comp_env.cluster_wd + self.output_folder)
+        self.queue.sync(self.queue.local_wd + self.output_folder,
+                        self.queue.cluster_wd + self.output_folder,
+                        SyncTo.REMOTE)
 
         self_path = os.path.dirname(os.path.realpath(__file__))
         self_relative_project_path = os.path.relpath(self_path, '.')
 
-        self.ge_jobid = self.comp_env.submit_job(self.task_name,
-                                                 [self_relative_project_path + '/function_caller.py', self.task_path],
-                                                 self.output_folder)
+        self.ge_jobid = self.queue.submit_job(self.task_name,
+                                              [self_relative_project_path + '/function_caller.py', self.task_path],
+                                              self.output_folder)
 
     def get_result(self, wait=True, retry_interval=1):
         task_res = None
@@ -56,7 +58,8 @@ class Task:
                 else:
                     retry = True
 
-                self.comp_env.sync_from_cluster(self.comp_env.local_wd + self.output_folder,
-                                                self.comp_env.cluster_wd + self.output_folder)
+                self.queue.sync(self.queue.local_wd + self.output_folder,
+                                self.queue.cluster_wd + self.output_folder,
+                                SyncTo.LOCAL)
 
         return task_res
