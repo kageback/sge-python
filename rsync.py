@@ -17,7 +17,7 @@ def sync_folder(local_path, remote_path, remote_host='localhost', local_to_remot
     process.wait()
 
 
-def _host_path(path, host):
+def _host_path(path, host, user=''):
     if host == 'localhost':
         return os.path.expanduser(path)
     else:

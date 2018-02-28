@@ -20,3 +20,12 @@ def slugify(value):
     value = re.sub('[^\w\s-]', '', value).strip()
     value = re.sub('[-\s]+', '-', value)
     return value
+
+
+def ensure_iter(iterator):
+    try:
+        iter(iterator)
+    except TypeError:
+        #wrap in list
+        iterator = [iterator]
+    return iterator

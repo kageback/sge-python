@@ -21,6 +21,19 @@ class Grid:
         self.wait(job)
         return task.get_result()
 
+    def map(self, f, iterator):
+
+        job = Job(jobs_base_path=self.jobs_base_path, job_id_prefix=slugify(f.__name__))
+        tasks = []
+        for args in iterator:
+            args = ensure_iter(args)
+            queue = self.get_free_queue()
+            tasks.append(job.run_function(queue, f, args, {}))
+        self.wait(job)
+        #result = [task.get_result() for task in tasks]
+        result = map(lambda task: task.get_result(), tasks)
+        return result
+
     def get_free_queue(self, wait=True):
         free_env = None
         max_free_queue_slots = 0
@@ -34,7 +47,7 @@ class Grid:
                 time.sleep(5)
         return free_env
 
-    def wait(self, job):
+    def wait(self, job,retry_interval=1):
         done = False
         while(not done):
 
@@ -49,7 +62,7 @@ class Grid:
 
             if queued + running > 0:
                 print('\rWaiting for ' + str(running) + ' running and ' + str(queued) + ' queued tasks to finish', end="")
-                time.sleep(10)
+                time.sleep(retry_interval)
             elif error > 0:
                 print('\nAll tasks terminated! ' + str(error) + ' tasks stuck in error state')
                 done = True

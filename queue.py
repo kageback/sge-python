@@ -9,7 +9,7 @@ from gridengine.misc import *
 
 class Queue:
     def __init__(self, cluster_wd='~/runtime/env/', interpreter='python3', interpreter_args='-u',
-                 ge_gpu=-1, ge_aux_args='', host='localhost', queue_limit=1):
+                 ge_gpu=-1, ge_aux_args='', host='localhost', user='', queue_limit=1):
 
         self.local_wd = './'
         self.exclude = ['__pycache__', '.git', '.idea']
@@ -25,6 +25,8 @@ class Queue:
 
         self.interpreter_cmd = interpreter + ' ' + interpreter_args
         self.host = host
+        if user != '':
+            self.host = user + '@' + self.host
         self.queue_limit = queue_limit
 
         self.qsub_base_args = 'qsub -b y -wd ' + self.cluster_wd + ' ' + ge_aux_args

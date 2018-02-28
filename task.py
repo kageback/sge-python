@@ -29,8 +29,8 @@ class Task:
         self.comp_env = None
         self.ge_jobid = None
 
-    def schedule(self, comp_env):
-        self.comp_env = comp_env
+    def schedule(self, queue):
+        self.comp_env = queue
         save(self)
 
         self.comp_env.sync_to_cluster(self.comp_env.local_wd + self.output_folder,
@@ -43,7 +43,7 @@ class Task:
                                                  [self_relative_project_path + '/function_caller.py', self.task_path],
                                                  self.output_folder)
 
-    def get_result(self, wait=True, retry_interval=5):
+    def get_result(self, wait=True, retry_interval=1):
         task_res = None
         retry = False
         while wait and task_res is None:
