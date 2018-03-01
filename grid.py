@@ -1,5 +1,6 @@
 import time
 from gridengine.job import Job
+import gridengine.task
 from gridengine.misc import *
 from gridengine import SyncTo
 
@@ -14,12 +15,18 @@ class Grid:
 
     def sync(self, local_path, cluster_path, sync_to, exclude=[]):
         for queue in self.queues:
-            queue.sync(local_path, cluster_path, sync_to, exclude)
+            queue.sync(local_path, queue.cluster_wd + cluster_path, sync_to, exclude)
 
     def run_job(self, job):
         for task in job.tasks:
-            queue = self.get_free_queue()
-            task.schedule(queue)
+            if type(task) is gridengine.task.Task:
+                queue = self.get_free_queue()
+                task.schedule(queue)
+            elif type(task) is gridengine.task.WaitTask:
+                self.wait(job)
+
+
+
 
 
     def run_function(self, f, *args, **kwargs):

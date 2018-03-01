@@ -2,7 +2,7 @@ import os
 import time
 import dill as pickle
 
-from gridengine.task import Task
+from gridengine.task import Task, WaitTask
 
 def save(job):
     with open(job.job_dir + "job.pkl", 'wb') as f:
@@ -47,5 +47,6 @@ class Job:
 
         return task
 
-
+    def add_wait(self, tasks=None):
+        self.tasks.append(WaitTask(tasks))
 

@@ -63,3 +63,9 @@ class Task:
                                 SyncTo.LOCAL)
 
         return task_res
+
+
+class WaitTask:
+    def __init__(self, task_name='wait_task'):
+        self.ge_jobid = 0
+        self.task_name = task_name
