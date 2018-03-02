@@ -47,20 +47,21 @@ class Task:
 
     def get_result(self, wait=True, retry_interval=1):
         task_res = None
-        retry = False
-        while wait and task_res is None:
-            try:
-                with open(self.result_path, 'rb') as f:
-                    task_res = pickle.load(f)
-            except FileNotFoundError:
-                if retry:
-                    time.sleep(retry_interval)
-                else:
-                    retry = True
-
+        while task_res is None:
+            # sync results folder
+            if not os.path.isfile(self.result_path):
                 self.queue.sync(self.queue.local_wd + self.output_folder,
                                 self.queue.cluster_wd + self.output_folder,
                                 SyncTo.LOCAL)
+
+            # Read if available.
+            if os.path.isfile(self.result_path):
+                with open(self.result_path, 'rb') as f:
+                    task_res = pickle.load(f)
+            elif wait:
+                time.sleep(retry_interval)
+            else:
+                return None
 
         return task_res
 

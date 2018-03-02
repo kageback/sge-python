@@ -18,13 +18,32 @@ class Grid:
             queue.sync(local_path, queue.cluster_wd + cluster_path, sync_to, exclude)
 
     def run_job(self, job):
-        for task in job.tasks:
-            if type(task) is gridengine.task.Task:
-                queue = self.get_free_queue()
-                task.schedule(queue)
-            elif type(task) is gridengine.task.WaitTask:
-                self.wait(job)
+        to_do = job.tasks
+        done = False
+        while not done:
+            done = True
+            backlog = []
+            for task in to_do:
+                if self.resolve_args(task):
+                    queue = self.get_free_queue()
+                    task.schedule(queue)
+                    backlog.append(task)
+                else:
+                    done = False
 
+            to_do = backlog
+            print('waiting for task...')
+            time.sleep(5)
+
+    def resolve_args(self, task):
+        for k in task.kwargs.keys():
+            if isinstance(task.kwargs[k], gridengine.task.Task):
+                res = task.kwargs[k].get_result(wait=False)
+                if res is None:
+                    return False
+                else:
+                    task.kwargs[k] = res
+        return True
 
 
 
