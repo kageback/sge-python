@@ -19,17 +19,14 @@ class Grid:
 
     def run_job(self, job):
         to_do = job.tasks
-        done = False
-        while not done:
-            done = True
+        while len(to_do) > 0:
             backlog = []
             for task in to_do:
                 if self.resolve_args(task):
                     queue = self.get_free_queue()
                     task.schedule(queue)
-                    backlog.append(task)
                 else:
-                    done = False
+                    backlog.append(task)
 
             to_do = backlog
             print('waiting for task...')

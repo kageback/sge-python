@@ -46,6 +46,9 @@ class Task:
                                               self.output_folder)
 
     def get_result(self, wait=True, retry_interval=1):
+        if self.queue is None:
+            return None
+
         task_res = None
         while task_res is None:
             # sync results folder

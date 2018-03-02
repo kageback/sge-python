@@ -1,4 +1,4 @@
-import pickle as pickle
+import dill as pickle
 import os
 import sys
 
@@ -29,9 +29,6 @@ def main(arg_stack):
     with open(task.result_path, 'wb') as f:
         pickle.dump(result, f)
 
-    print('Done pickling')
-
 if __name__ == '__main__':
     sys.path.append(os.getcwd())
-
     main(sys.argv)
