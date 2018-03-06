@@ -1,6 +1,6 @@
 import os
 import time
-import dill as pickle
+import pickle as pickle
 
 from gridengine.task import Task, WaitTask
 

@@ -1,5 +1,5 @@
 import os
-import dill as pickle
+import pickle as pickle
 import time
 from gridengine.misc import *
 from gridengine import SyncTo
