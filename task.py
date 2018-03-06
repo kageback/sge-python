@@ -59,8 +59,15 @@ class Task:
 
             # Read if available.
             if os.path.isfile(self.result_path):
-                with open(self.result_path, 'rb') as f:
-                    task_res = pickle.load(f)
+                try:
+                    with open(self.result_path, 'rb') as f:
+                        task_res = pickle.load(f)
+                except EOFError:
+                    print('downloading result...')
+                    time.sleep(retry_interval)
+                    self.queue.sync(self.queue.local_wd + self.output_folder,
+                                    self.queue.cluster_wd + self.output_folder,
+                                    SyncTo.LOCAL)
             elif wait:
                 time.sleep(retry_interval)
             else:
