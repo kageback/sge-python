@@ -3,6 +3,7 @@ import pickle as pickle
 import time
 from gridengine.misc import *
 from gridengine import SyncTo
+from gridengine.result_wrapper import Results
 
 def save(task):
     with open(task.task_path, 'wb') as f:
@@ -25,25 +26,30 @@ class Task:
 
         self.output_folder = enforce_trailing_backslash(output_folder)
         self.task_path = output_folder + task_name + ".task.pkl"
-        self.result_path = output_folder + task_name + ".result.pkl"
+        self.result_base_path = output_folder + task_name + ".result"
 
         self.queue = None
-        self.ge_jobid = None
+        self.sge_job_id = None
+
+        self.result = Results(self.result_base_path)
 
     def schedule(self, queue):
+
         self.queue = queue
         save(self)
 
         self.queue.sync(self.queue.local_wd + self.output_folder,
                         self.queue.cluster_wd + self.output_folder,
-                        SyncTo.REMOTE)
+                        SyncTo.REMOTE, recursive=True)
 
         self_path = os.path.dirname(os.path.realpath(__file__))
         self_relative_project_path = os.path.relpath(self_path, '.')
 
-        self.ge_jobid = self.queue.submit_job(self.task_name,
-                                              [self_relative_project_path + '/function_caller.py', self.task_path],
-                                              self.output_folder)
+        self.sge_job_id = self.queue.submit_job(self.task_name,
+                                                [self_relative_project_path + '/function_caller.py', self.task_path],
+                                                self.output_folder)
+
+        self.result.set_queue(queue, self.sge_job_id)
 
     def get_result(self, wait=True, retry_interval=1):
         if self.queue is None:
@@ -52,22 +58,22 @@ class Task:
         task_res = None
         while task_res is None:
             # sync results folder
-            if not os.path.isfile(self.result_path):
+            if not os.path.isfile(self.result_base_path):
                 self.queue.sync(self.queue.local_wd + self.output_folder,
                                 self.queue.cluster_wd + self.output_folder,
-                                SyncTo.LOCAL)
+                                SyncTo.LOCAL, recursive=True)
 
             # Read if available.
-            if os.path.isfile(self.result_path):
+            if os.path.isfile(self.result_base_path):
                 try:
-                    with open(self.result_path, 'rb') as f:
+                    with open(self.result_base_path, 'rb') as f:
                         task_res = pickle.load(f)
                 except EOFError:
                     print('downloading result...')
                     time.sleep(retry_interval)
                     self.queue.sync(self.queue.local_wd + self.output_folder,
                                     self.queue.cluster_wd + self.output_folder,
-                                    SyncTo.LOCAL)
+                                    SyncTo.LOCAL, recursive=True)
             elif wait:
                 time.sleep(retry_interval)
             else:

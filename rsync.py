@@ -7,8 +7,12 @@ class SyncTo(Enum):
     REMOTE = 1
     LOCAL = 2
 
-def sync_folder(local_path, remote_path, sync_to, remote_host='localhost', exclude=[], aux_args=""):
-    cmd = ['rsync', '-vr'] + _shell(remote_host) + aux_args.split()
+def sync_folder(local_path, remote_path, sync_to, remote_host='localhost', exclude=[], aux_args="", recursive=False):
+
+    cmd = ['rsync', '-v']
+    if recursive:
+        cmd += ['-r']
+    cmd += _shell(remote_host) + aux_args.split()
 
     for folder in exclude:
         cmd += ['--exclude', folder]

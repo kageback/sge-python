@@ -3,6 +3,7 @@ from gridengine.job import Job
 import gridengine.task
 from gridengine.misc import *
 from gridengine import SyncTo
+from gridengine.result_wrapper import ResultWrapper
 
 
 class Grid:
@@ -15,35 +16,32 @@ class Grid:
 
     def sync(self, local_path, cluster_path, sync_to, exclude=[]):
         for queue in self.queues:
-            queue.sync(local_path, queue.cluster_wd + cluster_path, sync_to, exclude)
+            queue.sync(local_path, queue.cluster_wd + cluster_path, sync_to, exclude, recursive=True)
 
-    def run_job(self, job):
+    def run_job(self, job, poll_interval=5):
         to_do = job.tasks
         while len(to_do) > 0:
             backlog = []
             for task in to_do:
-                if self.resolve_args(task):
+                if self.dependencies_finished(task):
                     queue = self.get_free_queue()
                     task.schedule(queue)
                 else:
                     backlog.append(task)
 
             to_do = backlog
-            print('waiting for task...')
-            time.sleep(5)
+            print('\r' + str(len(to_do)) + ' tasks left to schedule...', end="")
+            time.sleep(poll_interval)
+        self.wait(job, retry_interval=poll_interval)
+        print("\n Done!")
 
-    def resolve_args(self, task):
+    @staticmethod
+    def dependencies_finished(task):
         for k in task.kwargs.keys():
-            if isinstance(task.kwargs[k], gridengine.task.Task):
-                res = task.kwargs[k].get_result(wait=False)
-                if res is None:
+            if isinstance(task.kwargs[k], ResultWrapper):
+                if not task.kwargs[k].is_finished():
                     return False
-                else:
-                    task.kwargs[k] = res
         return True
-
-
-
 
     def run_function(self, f, *args, **kwargs):
 
@@ -79,7 +77,7 @@ class Grid:
                 time.sleep(5)
         return free_env
 
-    def wait(self, job,retry_interval=1):
+    def wait(self, job, retry_interval=1):
         done = False
         while(not done):
 

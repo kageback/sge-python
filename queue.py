@@ -34,9 +34,14 @@ class Queue:
         if ge_gpu >= 0:
             self.qsub_base_args += ' -l gpu=' + str(ge_gpu)
 
-    def sync(self, local_path, cluster_path, sync_to, exclude=[],):
+        # create cluster wd if necessary
+        cmd = 'mkdir -p ' + self.cluster_wd
+        proc = subprocess.Popen(select_shell(cmd.split(), self.host))
+        proc.wait()
+
+    def sync(self, local_path, cluster_path, sync_to, exclude=[], recursive=False):
         exclude += self.exclude
-        rsync.sync_folder(local_path, cluster_path, sync_to, exclude=exclude, remote_host=self.host)
+        rsync.sync_folder(local_path, cluster_path, sync_to, exclude=exclude, remote_host=self.host, recursive=recursive)
 
     def submit_job(self, task_name, args, log_folder="./"):
         log_folder = enforce_trailing_backslash(log_folder)
@@ -47,7 +52,7 @@ class Queue:
         qsub_str = self.qsub_base_args + task_args + self.interpreter_cmd
         qsub_cmd = qsub_str.split() + args
 
-        proc = subprocess.Popen(select_shell(qsub_cmd, self.host), stdout=subprocess.PIPE)#, cwd=self.wd)
+        proc = subprocess.Popen(select_shell(qsub_cmd, self.host), stdout=subprocess.PIPE)
         stdout, stderr = proc.communicate()
 
         out = stdout.split()
@@ -64,7 +69,7 @@ class Queue:
         other = 0
         for line in lines[2:-1]:
             taskid = int(line.split()[0])
-            if job == None or (taskid in [task.ge_jobid for task in job.tasks]):
+            if job == None or (taskid in [task.sge_job_id for task in job.tasks]):
                 task_state = line.split()[4]
                 if task_state == b'qw':
                     queued += 1
@@ -75,13 +80,23 @@ class Queue:
 
         return queued, running, other
 
+    def is_job_finished(self, sge_job_id):
+        proc = subprocess.Popen(select_shell(['qstat'], self.host), stdout=subprocess.PIPE)
+        stdout, stderr = proc.communicate()
+        lines = stdout.split(b'\n')
+
+        for line in lines[2:-1]:
+            if int(line.split()[0]) == sge_job_id:
+                return False
+        return True
+
     def queue_slots_available(self):
         queued, running, error = self.queue_state()
         return self.queue_limit - queued
 
 
 class Local(Queue):
-    def sync(self, local_path, cluster_path, sync_to, exclude=[]):
+    def sync(self, local_path, cluster_path, sync_to, exclude=[], recursive=True):
         print('Local: no need to sync')
 
     def queue_slots_available(self):
@@ -93,3 +108,6 @@ class Local(Queue):
     def submit_job(self, task_name, args, log_folder="./"):
         function_caller.main(args[1:])
         return 1
+
+    def is_job_finished(self, sge_job_id):
+        return True
