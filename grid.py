@@ -16,7 +16,7 @@ class Grid:
 
     def sync(self, local_path, cluster_path, sync_to, exclude=[]):
         for queue in self.queues:
-            queue.sync(local_path, queue.cluster_wd + cluster_path, sync_to, exclude, recursive=True)
+            queue.sync(local_path, cluster_path, sync_to, exclude, recursive=True)
 
     def run_job(self, job, poll_interval=5):
         to_do = job.tasks
@@ -47,7 +47,7 @@ class Grid:
 
         job = Job(jobs_base_path=self.jobs_base_path, job_id_prefix=slugify(f.__name__))
         queue = self.get_free_queue()
-        task = job.add_function(queue, f, args, kwargs)
+        task = job.run(queue, f, args, kwargs)
         self.wait(job)
         return task.get_result()
 
@@ -58,7 +58,7 @@ class Grid:
         for args in iterator:
             args = ensure_iter(args)
             queue = self.get_free_queue()
-            tasks.append(job.add_function(queue, f, args, {}))
+            tasks.append(job.run(queue, f, args, {}))
         self.wait(job)
         #result = [task.get_result() for task in tasks]
         result = map(lambda task: task.get_result(), tasks)

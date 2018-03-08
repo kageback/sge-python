@@ -10,8 +10,10 @@ def select_shell(cmd_list, host='localhost'):
     if host == 'localhost':
         return cmd_list
     else:
-        cmd = 'ssh ' + host + ' bash --login -c "' + ' '.join(cmd_list) + '"'
-        return cmd.split()
+        #cmd = 'ssh ' + host + ' bash --login -c "' + ' '.join(cmd_list) + '"'
+        #return cmd.split()
+
+        return ['ssh', host, 'bash', '--login -c "'] + cmd_list + ['"']
 
 
 
