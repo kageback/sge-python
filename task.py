@@ -33,14 +33,13 @@ class Task:
         self.queue = None
         self.sge_job_id = None
 
-        #self.result = Results(self.result_base_path)
         self.results = {}
 
     def result(self, result_index=0):
         if result_index in self.results:
             return self.results[result_index]
 
-        self.results[result_index] = ResultWrapper(self.result_base_path + '('+str(result_index) + ')', self.sge_job_id)
+        self.results[result_index] = ResultWrapper(self, self.result_base_path + '('+str(result_index) + ')')
         return self.results[result_index]
 
     def schedule(self, queue):
