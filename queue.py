@@ -55,8 +55,8 @@ class Queue:
         stdout, stderr = proc.communicate()
 
         out = stdout.split()
-        ge_process_id = int(out[2])
-        return ge_process_id
+        sge_job_id = int(out[2])
+        return sge_job_id
 
     def queue_stat(self, sge_job_ids=[]):
         states = {}
@@ -103,7 +103,7 @@ class Local(Queue):
     def queue_stat(self, sge_job_ids=None):
         return {}
 
-    def submit_job(self, task_name, args, log_folder="./"):
+    def submit_job(self, task_name, args, log_folder="./", dependencies=[]):
         function_caller.main(args[1:])
         return 1
 

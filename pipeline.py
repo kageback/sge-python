@@ -7,39 +7,38 @@ from gridengine.task import Task
 from gridengine.result_wrapper import ResultWrapper
 
 
-class Job:
-    def __init__(self, queue, jobs_base_path='jobs', job_id_prefix='job'):
+class Pipeline:
+    def __init__(self, queue, pipelines_path='pipelines', pipeline_id_prefix='pl'):
         self.queue = queue
 
-        jobs_base_path = os.path.dirname(jobs_base_path + '/') + '/'
+        pipelines_path = os.path.dirname(pipelines_path + '/') + '/'
 
         self.tasks = []
 
-        # Create job directory
-        if not os.path.isdir(jobs_base_path):
-            print('Jobs directory missing. Creating directory: ' + os.path.realpath(jobs_base_path))
-            os.mkdir(jobs_base_path)
+        # Create pipeline output directory
+        if not os.path.isdir(pipelines_path):
+            print('Pipelines directory missing. Creating directory: ' + os.path.realpath(pipelines_path))
+            os.mkdir(pipelines_path)
         i = 0
         while(True):
-            self.job_name = job_id_prefix + '.' + str(i)
-            self.job_dir = jobs_base_path + self.job_name + '/'
+            self.pipeline_name = pipeline_id_prefix + '.' + str(i)
+            self.pipeline_path = pipelines_path + self.pipeline_name + '/'
 
-            if os.path.isdir(self.job_dir):
+            if os.path.isdir(self.pipeline_path):
                 i += 1
             else:
-                os.mkdir(self.job_dir)
+                os.mkdir(self.pipeline_path)
                 break
 
     def run(self, f, *args, **kwargs):
         dependencies = self.get_job_dependencies(args, kwargs)
 
-        task_name = self.job_name + '.' + str(len(self.tasks))
+        task_name = self.pipeline_name + '.' + str(len(self.tasks))
 
-        task = Task(f, args, kwargs, task_name, self.job_dir, dependencies)
+        task = Task(f, args, kwargs, task_name, self.pipeline_path, dependencies)
         self.tasks.append(task)
 
         task.schedule(self.queue)
-
 
         return task
 
@@ -66,13 +65,13 @@ class Job:
                 time.sleep(retry_interval)
 
     def save(self):
-        with open(self.job_dir + "job.pkl", 'wb') as f:
+        with open(self.pipeline_path + "pipeline.pkl", 'wb') as f:
             pickle.dump(self, f)
 
     @staticmethod
-    def load(job_id, jobs_base_path='jobs'):
-        jobs_base_path = os.path.dirname(jobs_base_path + '/') + '/'
-        save_path = jobs_base_path + job_id + "/job.pkl"
+    def load(pipeline_id, pipelines_path='pipelines'):
+        pipelines_path = os.path.dirname(pipelines_path + '/') + '/'
+        save_path = pipelines_path + pipeline_id + "/pipeline.pkl"
         with open(save_path, 'rb') as f:
             return pickle.load(f)
 
