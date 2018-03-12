@@ -14,6 +14,6 @@ My main goal was to make the underling computational envioment transparent to th
 If you need to run a pipeline (or network) of Jobs depending on the output of other jobs if is as easy as creating a Pipeline object and running the Jobs through that. The dependencies are defined by using the output result wrapper as an argument for the next Job.
 
 ### GPU allocation
-
+This lib has support for allocating GPU resources on the grid. However, it assumes that the SGE instance has been set up using using to handle GPUs as a resource. E.g. using https://github.com/kageback/sge-gpuprolog
 
 ## installation
