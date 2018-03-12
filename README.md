@@ -15,7 +15,7 @@ If you need to run a pipeline (or network) of Jobs depending on the output of ot
 
 ### Hyper Param Search
 
-### GPU allocation
+## GPU allocation
 This lib has support for allocating GPU resources on the grid. However, it assumes that the SGE instance has been set up using using to handle GPUs as a resource. E.g. using https://github.com/kageback/sge-gpuprolog
 
 ## installation
