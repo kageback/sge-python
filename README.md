@@ -1,6 +1,6 @@
 # sge-python
 
-If you are running experimented in python on a GridEngine (GE) cluster (or potentially your own computer with a local GE queue set up) this lib might be of use for you. It was developed by me during my PHD in Machine Learning so the use cases it has been tested for are mainly connected to that area. That said, the lib was designed to be agnostic to the task.  
+If you are running python experiments on a GridEngine (GE) cluster (or potentially your own computer with a local GE queue) this lib might be of use for you. It was developed by me during my PHD in Machine Learning so the use cases it has been tested for are mainly connected to that area. That said, the lib was designed to be agnostic to the task.  
 
 ## Design philosophy
 To understand how to use the lib it is useful to understand how I was thinking designing it (I think).
