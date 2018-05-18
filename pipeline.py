@@ -8,8 +8,9 @@ from gridengine.result_wrapper import ResultWrapper
 
 
 class Pipeline:
-    def __init__(self, queue, pipelines_path='pipelines', pipeline_id_prefix='pl'):
+    def __init__(self, queue, pipelines_path='pipelines', pipeline_id_prefix='pl', hyperparams=None):
         self.queue = queue
+        self.hyperparams = hyperparams
 
         pipelines_path = os.path.dirname(pipelines_path + '/') + '/'
 
