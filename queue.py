@@ -95,7 +95,8 @@ class Queue:
 
 class Local(Queue):
     def sync(self, local_path, cluster_path, sync_to, exclude=[], recursive=True):
-        print('Sync not implemented for local queue.')
+        # print('Sync not implemented for local queue.')
+        pass
 
     def queue_slots_available(self):
         return 1

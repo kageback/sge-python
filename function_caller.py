@@ -15,11 +15,11 @@ def main(arg_stack):
         task = pickle.load(f)
 
     # print func ref to log
-    print('function = ', task.function)
+    #print('function = ', task.function)
 
     # Print arguments to log
-    print('args =', task.args)
-    print('kwargs =', task.kwargs)
+    #print('args =', task.args)
+    #print('kwargs =', task.kwargs)
 
     # get wrapped results
     for i in range(len(task.args)):
