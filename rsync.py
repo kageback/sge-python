@@ -13,9 +13,9 @@ def sync_folder(local_path, remote_path, sync_to, remote_host='localhost', exclu
     if recursive:
         cmd += ['-r']
     cmd += _shell(remote_host) + aux_args.split()
-
-    for folder in exclude:
-        cmd += ['--exclude', folder]
+    if recursive:
+        for folder in exclude:
+            cmd += ['--exclude', folder]
 
     if sync_to is SyncTo.REMOTE:
         cmd += [local_path, _host_path(remote_path, remote_host)]

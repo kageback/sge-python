@@ -47,9 +47,9 @@ class Task:
         self.queue = queue
         save(self)
 
-        self.queue.sync(self.queue.local_wd + self.output_folder,
+        self.queue.sync(self.queue.local_wd + self.task_path,
                         self.output_folder,
-                        SyncTo.REMOTE, recursive=True)
+                        SyncTo.REMOTE, recursive=False)
 
         self_path = os.path.dirname(os.path.realpath(__file__))
         self_relative_project_path = os.path.relpath(self_path, '.')
