@@ -79,24 +79,26 @@ class Pipeline:
             return pickle.load(f)
 
 
-##### HyperParamSearchExperiment ######
+##### Experiment ######
 
 from copy import deepcopy
 import itertools
 from collections import OrderedDict
 
 import numpy as np
-class HyperParamSearchExperiment(Pipeline):
+class Experiment(Pipeline):
 
-    def __init__(self, ranges, exp_name='exp', queue=None, pipelines_path='pipelines'):
+    def __init__(self, fixed_params=[], param_ranges=[], exp_name='exp', queue=None, pipelines_path='pipelines'):
         super().__init__(queue, pipelines_path, exp_name)
 
-        self.ranges = OrderedDict(ranges)
-        self.range_indices = OrderedDict([(r[0], range(len(r[1]))) for r in ranges])
+        self.fixed_params = OrderedDict(fixed_params)
 
-        self.axes = OrderedDict([(r[0], axis) for (r, axis) in zip(ranges, range(len(ranges)))])
+        self.param_ranges = OrderedDict(param_ranges)
+        self.range_indices = OrderedDict([(r[0], range(len(r[1]))) for r in param_ranges])
 
-        self.shape = [len(r[1]) for r in ranges]
+        self.axes = OrderedDict([(r[0], axis) for (r, axis) in zip(param_ranges, range(len(param_ranges)))])
+
+        self.shape = [len(r[1]) for r in param_ranges]
         self.result_wrappers = OrderedDict()
 
     def set_result(self, measure, index_coord, value):
@@ -128,4 +130,4 @@ class HyperParamSearchExperiment(Pipeline):
 
     def __iter__(self):
         #return itertools.product(*self.indexed_ranges.values())
-        return zip(itertools.product(*self.range_indices.values()), itertools.product(*self.ranges.values()))
+        return zip(itertools.product(*self.range_indices.values()), itertools.product(*self.param_ranges.values()))
