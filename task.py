@@ -19,7 +19,7 @@ def load(task_name, output_folder, job_folder='jobs'):
 class Task:
     def __init__(self, f, args, kwargs, task_name="task", output_folder="./", dependencies=[]):
         self.function = f
-        self.args = args
+        self.args = list(args)
         self.kwargs = kwargs
 
         self.dependencies = dependencies
