@@ -59,6 +59,42 @@ class Task:
                                                 self.output_folder,
                                                 dependencies=self.dependencies)
 
+    def execute(self):
+        # print func ref to log
+        # print('function = ', task.function)
+
+        # Print arguments to log
+        # print('args =', task.args)
+        # print('kwargs =', task.kwargs)
+
+        # get wrapped results
+        for i in range(len(self.args)):
+            if isinstance(self.args[i], ResultWrapper):
+                self.args[i] = self.args[i].get()
+        for k in self.kwargs:
+            if isinstance(self.kwargs[k], ResultWrapper):
+                self.kwargs[k] = self.kwargs[k].get()
+
+        # unpack member if attached to obj
+        if 'call_member' in self.kwargs:
+            if isinstance(self.function, Task):
+                self.obj = self.function.result().get()
+            try:
+                self.function = getattr(self.obj, self.kwargs['call_member'])
+                del self.kwargs['call_member']
+            except AttributeError:
+                print(self.kwargs['call_member'] + " not found")
+
+        # call function
+        result = self.function(*self.args, **self.kwargs)
+
+        # Add results
+        if type(result) is tuple:
+            for res, i in zip(result, range(len(result))):
+                self.result(i).set(res)
+        else:
+            self.result(0).set(result)
+
 
     def get_result(self, wait=True, retry_interval=1):
         # todo remove?
