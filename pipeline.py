@@ -101,32 +101,45 @@ class Experiment(Pipeline):
         self.shape = [len(r[1]) for r in param_ranges]
         self.result_wrappers = OrderedDict()
 
-    def set_result(self, measure, index_coord, value):
+    # Store the task representing the result of a particular parameter setting
+    def set_result(self, measure_name, index_coord, value):
         def add(list_obj, coord, value):
             if len(coord) > 1:
                 add(list_obj[coord[0]], coord[1:], value)
             else:
                 list_obj[coord[0]] = value
 
-        if measure not in self.result_wrappers.keys():
-            self.result_wrappers[measure] = np.zeros(self.shape).tolist()
+        if measure_name not in self.result_wrappers.keys():
+            self.result_wrappers[measure_name] = np.zeros(self.shape).tolist()
 
-        add(self.result_wrappers[measure], index_coord, value)
+        add(self.result_wrappers[measure_name], index_coord, value)
 
-
-    def to_numpy(self, output_name, result_index=0):
+    # Retrieve result from stored tasks corresponding to a measure and put into a numpy array.
+    def to_numpy(self, measure_name, task_result_index=0):
         def unwrap_results(list_obj):
-
+            # Recursively retrieve all results
             for i in range(len(list_obj)):
                 if type(list_obj[i]) is Task:
-                    list_obj[i] = list_obj[i].result(result_index).get()
+                    list_obj[i] = list_obj[i].result(task_result_index).get()
                 else:
                     unwrap_results(list_obj[i])
 
-        results = deepcopy(self.result_wrappers[output_name])
+        results = deepcopy(self.result_wrappers[measure_name])
         unwrap_results(results)
 
         return np.array(results)
+
+    def get_reduced(self, measure_name, keep_axes_named=[], reduce_method='avg', task_result_index=0):
+        x = self.to_numpy(measure_name, task_result_index)
+        keep_axes = [self.axes[axis] for axis in keep_axes_named]
+        x = np.moveaxis(x, keep_axes, range(len(keep_axes)))
+        if reduce_method == 'avg':
+            res = x.mean(axis=tuple(range(len(keep_axes), len(self.shape))))
+        elif reduce_method == 'std':
+            res = x.std(axis=tuple(range(len(keep_axes), len(self.shape))))
+        else:
+            raise ValueError('unsupported reduce function: ' + reduce_method)
+        return res
 
     def __iter__(self):
         #return itertools.product(*self.indexed_ranges.values())
