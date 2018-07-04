@@ -10,14 +10,14 @@ def save(task):
         pickle.dump(task, f)
 
 
-def load(task_name, output_folder, job_folder='jobs'):
+def load(task_name, task_folder, job_folder='jobs'):
     job_folder = enforce_trailing_backslash(job_folder)
-    output_folder = enforce_trailing_backslash(output_folder)
-    with open(job_folder + output_folder + task_name + ".pkl", 'rb') as f:
+    task_folder = enforce_trailing_backslash(task_folder)
+    with open(job_folder + task_folder + task_name + ".pkl", 'rb') as f:
         return pickle.load(f)
 
 class Task:
-    def __init__(self, f, args, kwargs, task_name="task", output_folder="./", dependencies=[]):
+    def __init__(self, f, args, kwargs, task_name="task", task_folder="./", dependencies=[]):
         self.function = f
         self.args = list(args)
         self.kwargs = kwargs
@@ -26,9 +26,10 @@ class Task:
 
         self.task_name = task_name
 
-        self.output_folder = enforce_trailing_backslash(output_folder)
-        self.task_path = output_folder + task_name + ".task.pkl"
-        self.result_base_path = output_folder + task_name + ".result"
+        self.task_folder = enforce_trailing_backslash(task_folder)
+
+        self.task_path = self.task_folder + task_name + ".task.pkl"
+        self.result_base_path = self.task_folder + task_name + ".result"
 
         self.queue = None
         self.sge_job_id = None
@@ -48,7 +49,7 @@ class Task:
         save(self)
 
         self.queue.sync(self.queue.local_wd + self.task_path,
-                        self.output_folder,
+                        self.task_folder,
                         SyncTo.REMOTE, recursive=False)
 
         self_path = os.path.dirname(os.path.realpath(__file__))
@@ -56,7 +57,7 @@ class Task:
 
         self.sge_job_id = self.queue.submit_job(self.task_name,
                                                 [self_relative_project_path + '/function_caller.py', self.task_path],
-                                                self.output_folder,
+                                                self.task_folder,
                                                 dependencies=self.dependencies)
 
     def execute(self):
@@ -105,8 +106,8 @@ class Task:
         while task_res is None:
             # sync results folder
             if not os.path.isfile(self.result_base_path):
-                self.queue.sync(self.queue.local_wd + self.output_folder,
-                                self.output_folder,
+                self.queue.sync(self.queue.local_wd + self.task_folder,
+                                self.task_folder,
                                 SyncTo.LOCAL, recursive=True)
 
             # Read if available.
@@ -117,8 +118,8 @@ class Task:
                 except EOFError:
                     print('downloading result...')
                     time.sleep(retry_interval)
-                    self.queue.sync(self.queue.local_wd + self.output_folder,
-                                    self.output_folder,
+                    self.queue.sync(self.queue.local_wd + self.task_folder,
+                                    self.task_folder,
                                     SyncTo.LOCAL, recursive=True)
             elif wait:
                 time.sleep(retry_interval)

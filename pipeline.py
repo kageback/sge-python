@@ -31,6 +31,8 @@ class Pipeline:
                 i += 1
             else:
                 os.mkdir(self.pipeline_path)
+                self.task_path = self.pipeline_path + 'tasks/'
+                os.mkdir(self.task_path)
                 break
 
     def run(self, f, *args, **kwargs):
@@ -38,7 +40,7 @@ class Pipeline:
 
         task_name = self.pipeline_name + '.' + str(len(self.tasks))
 
-        task = Task(f, args, kwargs, task_name, self.pipeline_path, dependencies)
+        task = Task(f, args, kwargs, task_name, self.task_path, dependencies)
         self.tasks.append(task)
 
         task.schedule(self.queue)
