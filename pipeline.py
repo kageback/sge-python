@@ -143,6 +143,19 @@ class Experiment(Pipeline):
             raise ValueError('unsupported reduce function: ' + reduce_method)
         return res
 
+    def get_flattened(self, measure_name, task_result_index=0):
+        def flatten_results(list_obj, flattened_results):
+            # Recursively retrieve all results
+            for i in range(len(list_obj)):
+                if type(list_obj[i]) is Task:
+                    flattened_results += [list_obj[i].result(task_result_index).get()]
+                else:
+                    flatten_results(list_obj[i], flattened_results)
+
+        flattened_results = []
+        flatten_results(self.result_wrappers[measure_name], flattened_results)
+        return flattened_results
+
     def __iter__(self):
         #return itertools.product(*self.indexed_ranges.values())
         return zip(itertools.product(*self.range_indices.values()), itertools.product(*self.param_ranges.values()))
