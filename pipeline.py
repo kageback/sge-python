@@ -4,7 +4,7 @@ import pickle as pickle
 from functools import reduce
 
 from gridengine.task import Task
-from gridengine.result_wrapper import ResultWrapper
+from gridengine.result_wrapper import ResultWrapper, LocalResult
 from gridengine.queue import Local
 
 class Pipeline:
@@ -111,18 +111,21 @@ class Experiment(Pipeline):
             else:
                 list_obj[coord[0]] = value
 
+        if not isinstance(value, ResultWrapper):
+            value = LocalResult(value)
+
         if measure_name not in self.result_wrappers.keys():
             self.result_wrappers[measure_name] = np.zeros(self.shape).tolist()
 
         add(self.result_wrappers[measure_name], index_coord, value)
 
     # Retrieve result from stored tasks corresponding to a measure and put into a numpy array.
-    def to_numpy(self, measure_name, task_result_index=0):
+    def to_numpy(self, measure_name):
         def unwrap_results(list_obj):
             # Recursively retrieve all results
             for i in range(len(list_obj)):
-                if type(list_obj[i]) is Task:
-                    list_obj[i] = list_obj[i].result(task_result_index).get()
+                if isinstance(list_obj[i], ResultWrapper):
+                    list_obj[i] = list_obj[i].get()
                 else:
                     unwrap_results(list_obj[i])
 
@@ -131,8 +134,8 @@ class Experiment(Pipeline):
 
         return np.array(results)
 
-    def get_reduced(self, measure_name, keep_axes_named=[], reduce_method='avg', task_result_index=0):
-        x = self.to_numpy(measure_name, task_result_index)
+    def get_reduced(self, measure_name, keep_axes_named=[], reduce_method='avg'):
+        x = self.to_numpy(measure_name)
         keep_axes = [self.axes[axis] for axis in keep_axes_named]
         x = np.moveaxis(x, keep_axes, range(len(keep_axes)))
         if reduce_method == 'avg':
@@ -143,12 +146,13 @@ class Experiment(Pipeline):
             raise ValueError('unsupported reduce function: ' + reduce_method)
         return res
 
-    def get_flattened(self, measure_name, task_result_index=0):
+    # Function that returns all results corresponing to a measure as one dim list
+    def get_flattened_results(self, measure_name):
         def flatten_results(list_obj, flattened_results):
             # Recursively retrieve all results
             for i in range(len(list_obj)):
-                if type(list_obj[i]) is Task:
-                    flattened_results += [list_obj[i].result(task_result_index).get()]
+                if isinstance(list_obj[i], ResultWrapper):
+                    flattened_results += [list_obj[i].get()]
                 else:
                     flatten_results(list_obj[i], flattened_results)
 

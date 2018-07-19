@@ -22,3 +22,21 @@ class ResultWrapper:
     @property
     def sge_job_id(self):
         return self.parent_task.sge_job_id
+
+
+class LocalResult(ResultWrapper):
+    def __init__(self, result):
+        self.result = result
+
+    def get(self):
+        return self.result
+
+    def set(self, result):
+        self.result = result
+
+    @property
+    def sge_job_id(self):
+        raise NotImplemented("Local results have no SGE job id.")
+
+
+
