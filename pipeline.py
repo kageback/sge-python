@@ -3,6 +3,8 @@ import time
 import pickle as pickle
 from functools import reduce
 
+from scipy.stats import t
+
 from gridengine.task import Task
 from gridengine.result_wrapper import ResultWrapper, LocalResult
 from gridengine.queue import Local
@@ -133,6 +135,26 @@ class Experiment(Pipeline):
         unwrap_results(results)
 
         return np.array(results)
+
+    # estimate mean and corresponding confidence interval
+    def estimate_mean(self, measure_name, as_function_of_axes=[], confidence_interval=0.95):
+        x = self.to_numpy(measure_name)
+        keep_axes = [self.axes[axis] for axis in as_function_of_axes]
+        x = np.moveaxis(x, keep_axes, range(len(keep_axes)))
+
+        # Collapse dimensions to average
+        x = x.reshape(list(x.shape[0:len(keep_axes)]) + [-1])
+        n = x.shape[-1]
+
+        mean = x.mean(axis=-1)
+        stddev = x.std(axis=-1, ddof=1)  # Sample variance
+
+        # Get the endpoints of the range that contains 95% of the distribution
+        # The degree used in calculations is N - ddof
+        t_bounds = t.interval(confidence_interval, n - 1)
+        ci = [mean + c * stddev / np.sqrt(n) for c in t_bounds]
+
+        return mean, ci
 
     def get_reduced(self, measure_name, keep_axes_named=[], reduce_method='avg'):
         x = self.to_numpy(measure_name)
