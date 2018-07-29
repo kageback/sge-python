@@ -6,7 +6,7 @@ from gridengine.misc import *
 import gridengine.function_caller as function_caller
 
 
-class Queue:
+class GEQueue:
     def __init__(self, cluster_wd='~/runtime/env/', interpreter='python3', interpreter_args='-u',
                  ge_gpu=-1, ge_aux_args='', host='localhost', user='', queue_limit=1):
 
@@ -93,7 +93,7 @@ class Queue:
         return self.queue_limit - queued
 
 
-class Local(Queue):
+class Local(GEQueue):
     def sync(self, local_path, cluster_path, sync_to, exclude=[], recursive=True):
         # print('Sync not implemented for local queue.')
         pass

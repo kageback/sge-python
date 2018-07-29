@@ -7,7 +7,7 @@ from scipy.stats import t
 
 from gridengine.task import Task
 from gridengine.result_wrapper import ResultWrapper, LocalResult
-from gridengine.queue import Local
+from gridengine.ge_queue import Local
 
 class Pipeline:
     def __init__(self, queue=None, pipelines_path='pipelines', pipeline_id_prefix='pl'):
