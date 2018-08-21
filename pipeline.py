@@ -136,14 +136,18 @@ class Experiment(Pipeline):
 
         return np.array(results)
 
-    # estimate mean and corresponding confidence interval
-    def estimate_mean(self, measure_name, as_function_of_axes=[], confidence_interval=0.95):
+    # returns all results corresponding to a measure as a list but keeping specified axes.
+    def reshape(self, measure_name, as_function_of_axes=[]):
         x = self.to_numpy(measure_name)
         keep_axes = [self.axes[axis] for axis in as_function_of_axes]
         x = np.moveaxis(x, keep_axes, range(len(keep_axes)))
-
         # Collapse dimensions to average
         x = x.reshape(list(x.shape[0:len(keep_axes)]) + [-1])
+        return x
+
+    # estimate mean and corresponding confidence interval
+    def estimate_mean(self, measure_name, as_function_of_axes=[], confidence_interval=0.95):
+        x = self.reshape(measure_name, as_function_of_axes)
         n = x.shape[-1]
 
         mean = x.mean(axis=-1)
@@ -169,6 +173,7 @@ class Experiment(Pipeline):
         return res
 
     # Function that returns all results corresponing to a measure as one dim list
+    # deprecated: Use reshape(measure_name) instead
     def get_flattened_results(self, measure_name):
         def flatten_results(list_obj, flattened_results):
             # Recursively retrieve all results
