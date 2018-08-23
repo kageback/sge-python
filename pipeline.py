@@ -82,14 +82,15 @@ class Pipeline:
         with open(save_path, 'rb') as f:
             return pickle.load(f)
 
+# #### Experiment ##### #
 
-##### Experiment ######
 
+import numpy as np
 from copy import deepcopy
 import itertools
 from collections import OrderedDict
 
-import numpy as np
+
 class Experiment(Pipeline):
 
     def __init__(self, fixed_params=[], param_ranges=[], exp_name='exp', queue=None, pipelines_path='pipelines'):
@@ -121,7 +122,7 @@ class Experiment(Pipeline):
 
         add(self.result_wrappers[measure_name], index_coord, value)
 
-    # Retrieve result from stored tasks corresponding to a measure and put into a numpy array.
+    # Retrieve result from stored tasks corresponding to a measure and put into a numpy tensor.
     def to_numpy(self, measure_name):
         def unwrap_results(list_obj):
             # Recursively retrieve all results
@@ -139,10 +140,13 @@ class Experiment(Pipeline):
     # returns all results corresponding to a measure as a list but keeping specified axes.
     def reshape(self, measure_name, as_function_of_axes=[]):
         x = self.to_numpy(measure_name)
+
         keep_axes = [self.axes[axis] for axis in as_function_of_axes]
         x = np.moveaxis(x, keep_axes, range(len(keep_axes)))
-        # Collapse dimensions to average
-        x = x.reshape(list(x.shape[0:len(keep_axes)]) + [-1])
+
+        data_axes = list(set(range(len(x.shape))) - set(self.axes.values()))
+
+        x = x.reshape(list(x.shape[0:len(keep_axes)]) + [-1] + [x.shape[d] for d in data_axes])
         return x
 
     # estimate mean and corresponding confidence interval
@@ -160,6 +164,7 @@ class Experiment(Pipeline):
 
         return mean, ci
 
+    # Deprecated: Use estimate_mean(.) instead.
     def get_reduced(self, measure_name, keep_axes_named=[], reduce_method='avg'):
         x = self.to_numpy(measure_name)
         keep_axes = [self.axes[axis] for axis in keep_axes_named]
@@ -173,7 +178,7 @@ class Experiment(Pipeline):
         return res
 
     # Function that returns all results corresponing to a measure as one dim list
-    # deprecated: Use reshape(measure_name) instead
+    # Deprecated: Use reshape(measure_name) instead
     def get_flattened_results(self, measure_name):
         def flatten_results(list_obj, flattened_results):
             # Recursively retrieve all results
