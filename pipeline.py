@@ -3,6 +3,10 @@ import time
 import pickle as pickle
 from functools import reduce
 
+import logging
+from datetime import datetime
+from pprint import pformat
+
 from scipy.stats import t
 
 from gridengine.task import Task
@@ -11,6 +15,7 @@ from gridengine.ge_queue import Local
 
 class Pipeline:
     def __init__(self, queue=None, pipelines_path='pipelines', pipeline_id_prefix='pl'):
+
         if queue is None:
             queue = Local()
 
@@ -36,6 +41,19 @@ class Pipeline:
                 self.task_path = self.pipeline_path + 'tasks/'
                 os.mkdir(self.task_path)
                 break
+
+        # Set up logging
+        self.setup_logging()
+
+    def setup_logging(self, log_level=logging.INFO):
+        self.log = logging.getLogger(__name__)
+        self.log.setLevel(log_level)
+        file_handler = logging.FileHandler(self.pipeline_path + 'experiment.log')
+        # file_handler.setFormatter(logging.Formatter('%(message)s'))
+        self.log.addHandler(file_handler)
+        stream_handler = logging.StreamHandler()
+        self.log.addHandler(stream_handler)
+        self.log.info('Start/continue experiment ({})'.format(datetime.now().strftime("%d %b %Y %H:%M:%S")))
 
     def run(self, f, *args, **kwargs):
         dependencies = self.get_job_dependencies(args, kwargs)
@@ -72,15 +90,22 @@ class Pipeline:
                 time.sleep(retry_interval)
 
     def save(self):
+        logger = self.log
+        self.log = None
         with open(self.pipeline_path + "pipeline.pkl", 'wb') as f:
             pickle.dump(self, f)
+        self.log = logger
 
     @staticmethod
     def load(pipeline_id, pipelines_path='pipelines'):
         pipelines_path = os.path.dirname(pipelines_path + '/') + '/'
         save_path = pipelines_path + pipeline_id + "/pipeline.pkl"
         with open(save_path, 'rb') as f:
-            return pickle.load(f)
+            obj = pickle.load(f)
+            obj.setup_logging()
+            obj.log.debug('Experiment loaded')
+            return obj
+
 
 # #### Experiment ##### #
 
@@ -95,7 +120,6 @@ class Experiment(Pipeline):
 
     def __init__(self, fixed_params=[], param_ranges=[], exp_name='exp', queue=None, pipelines_path='pipelines'):
         super().__init__(queue, pipelines_path, exp_name)
-
         self.fixed_params = OrderedDict(fixed_params)
 
         self.param_ranges = OrderedDict(param_ranges)
@@ -105,6 +129,11 @@ class Experiment(Pipeline):
 
         self.shape = [len(r[1]) for r in param_ranges]
         self.result_wrappers = OrderedDict()
+
+        self.log.info('Result axes: \n {} \nParameter ranges: \n {} \nFixed parameters: \n{} \n'.format(
+            pformat([str(k) + ':' + str(self.axes[k]) for k in self.axes.keys()]),
+            pformat(param_ranges),
+            pformat(fixed_params)))
 
     # Store the task representing the result of a particular parameter setting
     def set_result(self, measure_name, index_coord, value):
