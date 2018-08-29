@@ -1,6 +1,6 @@
 import os
 import time
-import pickle as pickle
+import dill as pickle
 from functools import reduce
 
 import logging
@@ -136,7 +136,7 @@ class Experiment(Pipeline):
             pformat(fixed_params)))
 
     # Store the task representing the result of a particular parameter setting
-    def set_result(self, measure_name, index_coord, value):
+    def set_result(self, measure_name, index_coord=None, value=None):
         def add(list_obj, coord, value):
             if len(coord) > 1:
                 add(list_obj[coord[0]], coord[1:], value)
@@ -149,7 +149,13 @@ class Experiment(Pipeline):
         if measure_name not in self.result_wrappers.keys():
             self.result_wrappers[measure_name] = np.zeros(self.shape).tolist()
 
-        add(self.result_wrappers[measure_name], index_coord, value)
+        if index_coord is None:
+            self.result_wrappers[measure_name] = value
+        else:
+            add(self.result_wrappers[measure_name], index_coord, value)
+
+    def get(self, measure_name):
+        return self.result_wrappers[measure_name].get()
 
     # Retrieve result from stored tasks corresponding to a measure and put into a numpy tensor.
     def to_numpy(self, measure_name):
