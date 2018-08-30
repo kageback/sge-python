@@ -1,6 +1,6 @@
 import os
 import time
-import dill as pickle
+import pickle as pickle
 from functools import reduce
 
 import logging
@@ -43,17 +43,15 @@ class Pipeline:
                 break
 
         # Set up logging
-        self.setup_logging()
+        self.logfile = self.pipeline_path + 'experiment.log'
+        self.log('Experiment created ({})'.format(datetime.now().strftime("%d %b %Y %H:%M:%S")))
 
-    def setup_logging(self, log_level=logging.INFO):
-        self.log = logging.getLogger(__name__)
-        self.log.setLevel(log_level)
-        file_handler = logging.FileHandler(self.pipeline_path + 'experiment.log')
-        # file_handler.setFormatter(logging.Formatter('%(message)s'))
-        self.log.addHandler(file_handler)
-        stream_handler = logging.StreamHandler()
-        self.log.addHandler(stream_handler)
-        self.log.info('Start/continue experiment ({})'.format(datetime.now().strftime("%d %b %Y %H:%M:%S")))
+
+    def log(self, msg):
+        print(msg)
+        with open(self.logfile, 'a') as f:
+            f.write(msg)
+
 
     def run(self, f, *args, **kwargs):
         dependencies = self.get_job_dependencies(args, kwargs)
@@ -86,15 +84,13 @@ class Pipeline:
                 print('\nAll tasks completed!')
                 done = True
             else:
-                print('\rWaiting for ' + str(reduce((lambda x, y: x + y), states.values())) + ' tasks in states: ' + str(states) , end="")
+                print('\rWaiting for ' + str(reduce((lambda x, y: x + y), states.values())) + ' tasks in states: ' + str(states), end="")
                 time.sleep(retry_interval)
 
     def save(self):
-        logger = self.log
-        self.log = None
         with open(self.pipeline_path + "pipeline.pkl", 'wb') as f:
             pickle.dump(self, f)
-        self.log = logger
+            self.log('Experiment saved ({})'.format(datetime.now().strftime("%d %b %Y %H:%M:%S")))
 
     @staticmethod
     def load(pipeline_id, pipelines_path='pipelines'):
@@ -103,7 +99,7 @@ class Pipeline:
         with open(save_path, 'rb') as f:
             obj = pickle.load(f)
             obj.setup_logging()
-            obj.log.debug('Experiment loaded')
+            obj.log('Experiment loaded ({})'.format(datetime.now().strftime("%d %b %Y %H:%M:%S")))
             return obj
 
 
@@ -130,7 +126,7 @@ class Experiment(Pipeline):
         self.shape = [len(r[1]) for r in param_ranges]
         self.result_wrappers = OrderedDict()
 
-        self.log.info('Result axes: \n {} \nParameter ranges: \n {} \nFixed parameters: \n{} \n'.format(
+        self.log('Result axes: \n {} \nParameter ranges: \n {} \nFixed parameters: \n{} \n'.format(
             pformat([str(k) + ':' + str(self.axes[k]) for k in self.axes.keys()]),
             pformat(param_ranges),
             pformat(fixed_params)))
