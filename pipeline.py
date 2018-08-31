@@ -97,8 +97,7 @@ class Pipeline:
         save_path = pipelines_path + pipeline_id + "/pipeline.pkl"
         with open(save_path, 'rb') as f:
             obj = pickle.load(f)
-            obj.setup_logging()
-            obj.log('Experiment loaded ({})'.format(datetime.now().strftime("%d %b %Y %H:%M:%S")))
+            #obj.log('Experiment loaded ({})'.format(datetime.now().strftime("%d %b %Y %H:%M:%S")))
             return obj
 
 
