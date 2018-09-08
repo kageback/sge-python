@@ -16,7 +16,7 @@ If you need to run a pipeline (or network) of Jobs depending on the output of ot
 ### Hyper Param Search
 
 ## installation
-Simply clone the repositry to some place you can import from. Best practice would be to add it as a submodule in the root folder of your project by running: git submodule add https://github.com/kageback/sge-python.git sge-python
+All you need to do to use the lib is to Clone/download the repositry to some place you can import from. However, the recomended best practice is to add it as a submodule in the root folder of your project by running: git submodule add https://github.com/kageback/sge-python.git sge-python
 
 
 ## GPU allocation
