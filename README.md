@@ -1,12 +1,12 @@
 # sge-python
 
-If you are running python experiments on a GridEngine (GE) cluster (or potentially your own computer with a local GE queue) this lib might be of use for you. It was developed by me during my PHD in Machine Learning so the use cases it has been tested for are mainly connected to that area. That said, the lib was designed to be agnostic to the task.  
+SGE-Python makes it easy to run python code on a GridEngine (GE) cluster and help you manage the results, getting rid of the need to create shell script or manually submitting jobs to the queue . 
 
-## Design philosophy
-To understand how to use the lib it is useful to understand how I was thinking designing it (I think).
-My main goal was to make the underling computational envioment transparent to the user and to achive this I use the generic function as interface. That is, you schould ideally be able to simply run any function via the library and get a result just as if you had run it locally. This makes it easy run code that was not specifically designed to run on a grid and also easy to debug your code locally by simply choosing to execute locally, i.e. without changing the code (except to flag that it is to be run locally).
+SGE-Python is designed to make the underlying execution transperent so that you can run the same code when developing/debugging localally as when running the your experiment on the cluster. Further, it lets you shedule the entire experiment at ones even when there are dependencies between the jobs and GE will subseqently run each job in parallel by stepping through the job dependency graph. This makes hyperparameter search in partally shared pipelines, e.g. where some of the initial steps in the pipeline is shared between experiments, easy to set up and efficent whichout loosing traceablitity of each processing step taken for each individual hyperparameter setting.   
 
-## Use cases
+Small disclaimer: SGE-Python was developed and used by me during my PhD in Machine Learning so the use cases it has been tested for are mainly connected to that area.  
+
+## Example Use cases
 
 ### One of Job
 
@@ -15,7 +15,10 @@ If you need to run a pipeline (or network) of Jobs depending on the output of ot
 
 ### Hyper Param Search
 
+## installation
+Simply clone the repositry to some place you can import from. Best practice would be to add it as a submodule in the root folder of your project by running: git submodule add https://github.com/kageback/sge-python.git sge-python
+
+
 ## GPU allocation
 This lib has support for allocating GPU resources on the grid. However, it assumes that the SGE instance has been set up using using to handle GPUs as a resource. E.g. using https://github.com/kageback/sge-gpuprolog
 
-## installation
