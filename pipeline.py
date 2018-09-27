@@ -148,6 +148,18 @@ class Experiment(Pipeline):
         else:
             add(self.result_wrappers[measure_name], index_coord, value)
 
+    def get_result(self, measure_name, index_coord=None):
+        def get(list_obj, coord):
+            if len(coord) > 1:
+                return get(list_obj[coord[0]], coord[1:])
+            else:
+                return list_obj[coord[0]]
+
+        if index_coord is None:
+            return self.result_wrappers[measure_name]
+        else:
+            return get(self.result_wrappers[measure_name], index_coord)
+
     def get(self, measure_name):
         return self.result_wrappers[measure_name].get()
 
