@@ -30,7 +30,7 @@ class Pipeline:
             os.mkdir(pipelines_path)
         i = 0
         while(True):
-            self.pipeline_name = pipeline_id_prefix + '.' + str(i)
+            self.pipeline_name = pipeline_id_prefix + '.' + datetime.now().strftime("%y%m%d.%H%M") + '.' +str(i)
             self.pipeline_path = pipelines_path + self.pipeline_name + '/'
 
             if os.path.isdir(self.pipeline_path):
