@@ -1,9 +1,9 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='expgraph',
     version='0.2',
-    packages=['gridengine'],
+    packages=find_packages(),
     url='https://github.com/kageback/sge-python',
     license='MIT License',
     author='Mikael Kågebäck',
