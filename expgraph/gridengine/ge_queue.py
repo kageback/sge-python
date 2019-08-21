@@ -5,8 +5,10 @@ import expgraph.rsync as rsync
 from expgraph.misc import *
 import expgraph.function_caller as function_caller
 
+from expgraph.queue import Queue
 
-class GEQueue:
+
+class GEQueue(Queue):
     def __init__(self, cluster_wd='~/runtime/env/', interpreter='python3', interpreter_args='-u',
                  ge_gpu=-1, ge_aux_args='', host='localhost', user='', queue_limit=1):
 
@@ -91,22 +93,3 @@ class GEQueue:
                 other += n
 
         return self.queue_limit - queued
-
-
-class Local(GEQueue):
-    def sync(self, local_path, cluster_path, sync_to, exclude=[], recursive=True):
-        # print('Sync not implemented for local queue.')
-        pass
-
-    def queue_slots_available(self):
-        return 1
-
-    def queue_stat(self, sge_job_ids=None):
-        return {}
-
-    def submit_job(self, task_name, args, log_folder="./", dependencies=[]):
-        function_caller.main(args[1:])
-        return 1
-
-    def is_job_finished(self, sge_job_id):
-        return True
