@@ -1,9 +1,9 @@
 import os
 import pickle as pickle
 import time
-from gridengine.misc import *
-from gridengine import SyncTo
-from gridengine.result_wrapper import ResultWrapper
+from expgraph.misc import *
+from expgraph.rsync import SyncTo
+from expgraph.result_wrapper import ResultWrapper
 
 def save(task):
     with open(task.task_path, 'wb') as f:

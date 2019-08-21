@@ -1,9 +1,9 @@
 import subprocess
 import os
 import socket
-import gridengine.rsync as rsync
-from gridengine.misc import *
-import gridengine.function_caller as function_caller
+import expgraph.rsync as rsync
+from expgraph.misc import *
+import expgraph.function_caller as function_caller
 
 
 class GEQueue:

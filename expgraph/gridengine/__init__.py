@@ -1,6 +1,5 @@
-from gridengine.rsync import SyncTo
 
-import gridengine.interactive as interactive
+import expgraph.gridengine.interactive as interactive
 
 
 def start_job(gpu=0, timeout=0):

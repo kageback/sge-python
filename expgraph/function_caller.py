@@ -3,7 +3,7 @@ import sys
 sys.path.append(os.getcwd())
 
 import pickle as pickle
-from gridengine.result_wrapper import ResultWrapper
+
 
 def main(arg_stack):
 
