@@ -10,7 +10,7 @@ from scipy.stats import t
 
 from expgraph.task import Task
 from expgraph.result_wrapper import ResultWrapper, LocalResult
-from expgraph.ge_queue import Local
+from expgraph.queue import Local
 
 
 class Pipeline:
