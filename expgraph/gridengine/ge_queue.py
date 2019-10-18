@@ -11,14 +11,9 @@ from expgraph.queue import Queue
 class GEQueue(Queue):
     def __init__(self, cluster_wd='~/runtime/env/', interpreter='python3', interpreter_args='-u',
                  ge_gpu=-1, ge_aux_args='', host='localhost', user='', queue_limit=1):
+        super().__init__()
 
-        self.local_wd = './'
         self.exclude = ['__pycache__', '.git', '.idea']
-
-        if not host == 'localhost':
-            # check if host is actually localhost. Host needs to be in /etc/hosts for this to work
-            if socket.gethostbyname('localhost') == socket.gethostbyname(host):
-                host = 'localhost'
 
         self.cluster_wd = os.path.expanduser(cluster_wd) if host == 'localhost' else cluster_wd
         self.cluster_wd = enforce_trailing_backslash(self.cluster_wd)
@@ -29,7 +24,7 @@ class GEQueue(Queue):
             self.host = user + '@' + self.host
         self.queue_limit = queue_limit
 
-        self.qsub_base_args = 'qsub -b y -wd ' + self.cluster_wd + ' ' + ge_aux_args
+        self.qsub_base_args = 'qsub -V -b y -wd ' + self.cluster_wd + ' ' + ge_aux_args
         if ge_gpu >= 0:
             self.qsub_base_args += ' -l gpu=' + str(ge_gpu)
 

@@ -52,11 +52,8 @@ class Task:
                         self.task_folder,
                         SyncTo.REMOTE, recursive=False)
 
-        self_path = os.path.dirname(os.path.realpath(__file__))
-        self_relative_project_path = os.path.relpath(self_path, '.')
-
         self.sge_job_id = self.queue.submit_job(self.task_name,
-                                                [self_relative_project_path + '/function_caller.py', self.task_path],
+                                                ['-m function_caller', self.task_path],
                                                 self.task_folder,
                                                 dependencies=self.dependencies)
 

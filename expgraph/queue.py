@@ -2,6 +2,9 @@ import expgraph.function_caller as function_caller
 
 
 class Queue:
+    def __init__(self):
+        self.local_wd = './'
+
     def sync(self, local_path, cluster_path, sync_to, exclude=[], recursive=False):
         pass
 
