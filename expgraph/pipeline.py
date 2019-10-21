@@ -237,3 +237,13 @@ class Experiment(Pipeline):
     def __iter__(self):
         #return itertools.product(*self.indexed_ranges.values())
         return zip(itertools.product(*self.range_indices.values()), itertools.product(*self.param_ranges.values()))
+
+    def iter_ranges(self):
+        for i, v in zip(itertools.product(*self.range_indices.values()), itertools.product(*self.param_ranges.values())):
+            v_dict = {}
+            for axes_key, axes_index in self.axes.items():
+                v_dict[axes_key] = v[axes_index]
+            yield i, v_dict
+
+    def __getitem__(self, item):
+        return self.fixed_params[item]
