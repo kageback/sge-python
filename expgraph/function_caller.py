@@ -1,3 +1,5 @@
+#!/usr/bin/env python -u
+
 import os
 import sys
 sys.path.append(os.getcwd())

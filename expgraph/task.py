@@ -53,7 +53,7 @@ class Task:
                         SyncTo.REMOTE, recursive=False)
 
         self.sge_job_id = self.queue.submit_job(self.task_name,
-                                                ['-m expgraph.function_caller', self.task_path],
+                                                ['function_caller', self.task_path],
                                                 self.task_folder,
                                                 dependencies=self.dependencies)
 

@@ -8,5 +8,6 @@ setup(
     license='MIT License',
     author='Mikael Kågebäck',
     author_email='mikael@kageback.se',
-    description='For running experiments. Simple or very complex. '
+    description='For running experiments. Simple or very complex. ',
+    scripts=['expgraph/function_caller.py']
 )
