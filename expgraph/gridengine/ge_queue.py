@@ -46,7 +46,7 @@ class GEQueue(Queue):
         if dependencies != []:
             task_args += ['-hold_jid', ','.join([str(dep) for dep in dependencies])]
 
-        qsub_cmd = self.qsub_base_args.split() + task_args + args
+        qsub_cmd = self.qsub_base_args.split() + task_args + self.interpreter_cmd + args
 
         proc = subprocess.Popen(select_shell(qsub_cmd, self.host), stdout=subprocess.PIPE)
         stdout, stderr = proc.communicate()
